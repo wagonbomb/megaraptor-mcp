@@ -45,6 +45,12 @@ def register_resources(server: Server) -> None:
                 description="Velociraptor server information and status",
                 mimeType="application/json",
             ),
+            Resource(
+                uri="velociraptor://deployments",
+                name="Managed Deployments",
+                description="List of Velociraptor deployments managed by Megaraptor MCP",
+                mimeType="application/json",
+            ),
         ]
 
     @server.read_resource()
@@ -69,6 +75,8 @@ def register_resources(server: Server) -> None:
             return await _handle_artifacts_resource(client, path_parts[1:])
         elif path_parts[0] == "server-info":
             return await _handle_server_info_resource(client)
+        elif path_parts[0] == "deployments":
+            return await _handle_deployments_resource(path_parts[1:])
         else:
             raise ValueError(f"Unknown resource path: {path}")
 
@@ -195,3 +203,80 @@ async def _handle_server_info_resource(client: Any) -> str:
         "info": results[0] if results else {},
         "version": version_results[0].get("version") if version_results else "unknown",
     }, indent=2, default=str)
+
+
+async def _handle_deployments_resource(path_parts: list[str]) -> str:
+    """Handle deployments resource requests."""
+    try:
+        from ..deployment.deployers import DockerDeployer, BinaryDeployer
+        from ..deployment.profiles import DeploymentState
+
+        if not path_parts or not path_parts[0]:
+            # List all deployments
+            all_deployments = []
+
+            # Get Docker deployments
+            try:
+                docker_deployer = DockerDeployer()
+                deployments = docker_deployer.list_deployments()
+                all_deployments.extend([d.to_dict() for d in deployments])
+            except Exception:
+                pass
+
+            # Get binary deployments
+            try:
+                binary_deployer = BinaryDeployer()
+                deployments = binary_deployer.list_deployments()
+                all_deployments.extend([d.to_dict() for d in deployments])
+            except Exception:
+                pass
+
+            return json.dumps({
+                "type": "deployment_list",
+                "count": len(all_deployments),
+                "deployments": all_deployments,
+            }, indent=2, default=str)
+
+        else:
+            # Get specific deployment
+            deployment_id = path_parts[0]
+
+            # Try Docker first
+            try:
+                deployer = DockerDeployer()
+                info = await deployer.get_status(deployment_id)
+                if info:
+                    health = await deployer.health_check(deployment_id)
+                    return json.dumps({
+                        "type": "deployment_detail",
+                        "deployment": info.to_dict(),
+                        "health": health,
+                    }, indent=2, default=str)
+            except Exception:
+                pass
+
+            # Try binary deployer
+            try:
+                deployer = BinaryDeployer()
+                info = await deployer.get_status(deployment_id)
+                if info:
+                    health = await deployer.health_check(deployment_id)
+                    return json.dumps({
+                        "type": "deployment_detail",
+                        "deployment": info.to_dict(),
+                        "health": health,
+                    }, indent=2, default=str)
+            except Exception:
+                pass
+
+            return json.dumps({
+                "error": f"Deployment {deployment_id} not found"
+            }, indent=2)
+
+    except ImportError as e:
+        return json.dumps({
+            "type": "deployment_list",
+            "count": 0,
+            "deployments": [],
+            "note": f"Deployment features require additional packages: {str(e)}",
+        }, indent=2)

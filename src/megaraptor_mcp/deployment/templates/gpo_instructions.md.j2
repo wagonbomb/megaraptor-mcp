@@ -1,0 +1,197 @@
+# Velociraptor Agent GPO Deployment Guide
+
+**Deployment ID**: {{ deployment_id }}
+**Generated**: {{ generated_at }}
+**Server URL**: {{ server_url }}
+
+## Overview
+
+This guide provides step-by-step instructions for deploying the Velociraptor agent to Windows domain computers using Group Policy Objects (GPO).
+
+## Prerequisites
+
+- Windows Server with Active Directory Domain Services
+- Domain Admin or delegated GPO management rights
+- Network share accessible by domain computers
+- MSI installer package (included in this bundle)
+
+## Step 1: Prepare the Network Share
+
+1. Create a network share accessible by all domain computers:
+   ```
+   \\{{ domain_controller | default('DC01') }}\NETLOGON\Velociraptor\
+   ```
+
+2. Copy the following files to the share:
+   - `velociraptor.msi` - The agent installer
+   - `client.config.yaml` - Client configuration
+
+3. Set share permissions:
+   - Domain Computers: Read & Execute
+   - Domain Admins: Full Control
+
+## Step 2: Create the GPO
+
+1. Open **Group Policy Management Console** (gpmc.msc)
+
+2. Right-click your target OU and select **Create a GPO in this domain, and Link it here...**
+
+3. Name the GPO: `Velociraptor Agent Deployment`
+
+4. Right-click the new GPO and select **Edit**
+
+## Step 3: Configure Software Installation
+
+1. Navigate to:
+   ```
+   Computer Configuration → Policies → Software Settings → Software Installation
+   ```
+
+2. Right-click and select **New → Package...**
+
+3. Enter the network path to the MSI:
+   ```
+   \\{{ domain_controller | default('DC01') }}\NETLOGON\Velociraptor\velociraptor.msi
+   ```
+
+4. Select **Assigned** deployment method
+
+5. Click **OK**
+
+## Step 4: Configure Client Configuration Deployment
+
+### Option A: Using Group Policy Preferences (Recommended)
+
+1. Navigate to:
+   ```
+   Computer Configuration → Preferences → Windows Settings → Files
+   ```
+
+2. Right-click and select **New → File**
+
+3. Configure:
+   - **Action**: Replace
+   - **Source file**: `\\{{ domain_controller | default('DC01') }}\NETLOGON\Velociraptor\client.config.yaml`
+   - **Destination file**: `C:\Program Files\Velociraptor\Velociraptor.config.yaml`
+
+### Option B: Using Startup Script
+
+1. Navigate to:
+   ```
+   Computer Configuration → Policies → Windows Settings → Scripts → Startup
+   ```
+
+2. Add a PowerShell script with the following content:
+
+```powershell
+# Deploy Velociraptor configuration
+$ConfigSource = "\\{{ domain_controller | default('DC01') }}\NETLOGON\Velociraptor\client.config.yaml"
+$ConfigDest = "C:\Program Files\Velociraptor\Velociraptor.config.yaml"
+
+if (Test-Path $ConfigSource) {
+    Copy-Item -Path $ConfigSource -Destination $ConfigDest -Force
+    Restart-Service -Name Velociraptor -ErrorAction SilentlyContinue
+}
+```
+
+## Step 5: Configure Service Startup
+
+1. Navigate to:
+   ```
+   Computer Configuration → Policies → Windows Settings → Security Settings → System Services
+   ```
+
+2. Find **Velociraptor** service
+
+3. Set startup mode to **Automatic**
+
+## Step 6: Security Group Targeting (Optional)
+
+To deploy only to specific computers:
+
+1. Create a security group (e.g., `Velociraptor-Agents`)
+
+2. Add target computers to the group
+
+3. In GPO **Security Filtering**:
+   - Remove "Authenticated Users"
+   - Add your security group with "Read" and "Apply group policy" permissions
+
+## Step 7: Firewall Configuration
+
+Add the following firewall rules via GPO:
+
+1. Navigate to:
+   ```
+   Computer Configuration → Policies → Windows Settings → Security Settings → Windows Firewall with Advanced Security → Outbound Rules
+   ```
+
+2. Create rule:
+   - **Name**: Velociraptor Agent Outbound
+   - **Program**: `C:\Program Files\Velociraptor\velociraptor.exe`
+   - **Action**: Allow
+   - **Remote Port**: {{ frontend_port }}
+
+## Verification
+
+### Check GPO Application
+
+On a target computer, run:
+```cmd
+gpresult /r
+```
+
+### Check Service Status
+
+```powershell
+Get-Service Velociraptor
+```
+
+### Check Server Enrollment
+
+In the Velociraptor GUI, navigate to:
+- Server Menu → Show Clients
+- Search for the enrolled computer
+
+## Troubleshooting
+
+### MSI Installation Fails
+
+Check the event log:
+```powershell
+Get-EventLog -LogName Application -Source MsiInstaller -Newest 10
+```
+
+### Service Not Starting
+
+Check configuration file:
+```powershell
+Test-Path "C:\Program Files\Velociraptor\Velociraptor.config.yaml"
+```
+
+### Agent Not Connecting
+
+Verify network connectivity:
+```powershell
+Test-NetConnection -ComputerName {{ server_hostname }} -Port {{ frontend_port }}
+```
+
+## Security Notes
+
+- **CA Fingerprint**: `{{ ca_fingerprint }}`
+- All agent communications are encrypted with mTLS
+- Client certificate is auto-generated on first enrollment
+- Configuration files contain sensitive CA certificates - protect accordingly
+
+## Files Included
+
+| File | Description |
+|------|-------------|
+| `velociraptor.msi` | Agent installer |
+| `client.config.yaml` | Client configuration |
+| `ca.crt` | CA certificate |
+| `GPO_Instructions.md` | This document |
+
+---
+
+*Generated by Megaraptor MCP - {{ deployment_id }}*

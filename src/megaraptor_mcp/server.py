@@ -19,6 +19,7 @@ from .tools import (
     register_hunt_tools,
     register_flow_tools,
     register_vql_tools,
+    register_deployment_tools,
 )
 from .resources import register_resources
 from .prompts import register_prompts
@@ -51,6 +52,9 @@ def create_server() -> Server:
 
     logger.info("Registering VQL tools...")
     register_vql_tools(server)
+
+    logger.info("Registering deployment tools...")
+    register_deployment_tools(server)
 
     # Register resources
     logger.info("Registering resources...")

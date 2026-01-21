@@ -90,6 +90,55 @@ def register_prompts(server: Server) -> None:
                     ),
                 ],
             ),
+            # Deployment prompts
+            Prompt(
+                name="rapid_ir_deployment",
+                description="Guided workflow for rapid Velociraptor deployment during an active incident. Gets you from zero to collecting artifacts in under 5 minutes.",
+                arguments=[
+                    PromptArgument(
+                        name="target_count",
+                        description="Approximate number of endpoints to deploy to",
+                        required=False,
+                    ),
+                    PromptArgument(
+                        name="environment",
+                        description="Environment type: 'windows_domain', 'mixed', 'linux', or 'cloud'",
+                        required=False,
+                    ),
+                ],
+            ),
+            Prompt(
+                name="deploy_and_triage",
+                description="Deploy Velociraptor and immediately begin triage collection on affected systems.",
+                arguments=[
+                    PromptArgument(
+                        name="incident_type",
+                        description="Type of incident: 'ransomware', 'intrusion', 'malware', 'data_breach', or 'unknown'",
+                        required=True,
+                    ),
+                    PromptArgument(
+                        name="affected_systems",
+                        description="List of affected system hostnames or IPs (comma-separated)",
+                        required=True,
+                    ),
+                ],
+            ),
+            Prompt(
+                name="offline_collection_kit",
+                description="Generate a complete offline collection kit for air-gapped or isolated systems.",
+                arguments=[
+                    PromptArgument(
+                        name="target_os",
+                        description="Target operating system: 'windows', 'linux', or 'macos'",
+                        required=True,
+                    ),
+                    PromptArgument(
+                        name="collection_type",
+                        description="Collection type: 'triage', 'full', 'memory', or 'custom'",
+                        required=False,
+                    ),
+                ],
+            ),
         ]
 
     @server.get_prompt()
@@ -107,6 +156,12 @@ def register_prompts(server: Server) -> None:
             return _get_malware_analysis_prompt(arguments)
         elif name == "lateral_movement":
             return _get_lateral_movement_prompt(arguments)
+        elif name == "rapid_ir_deployment":
+            return _get_rapid_ir_deployment_prompt(arguments)
+        elif name == "deploy_and_triage":
+            return _get_deploy_and_triage_prompt(arguments)
+        elif name == "offline_collection_kit":
+            return _get_offline_collection_kit_prompt(arguments)
         else:
             raise ValueError(f"Unknown prompt: {name}")
 
@@ -418,5 +473,299 @@ Please help me hunt for lateral movement indicators by checking:
 {'Create a hunt across all clients' if scope == 'all' else f'Focus investigation on {scope}'} for the past {timeframe}.
 
 Let's start by setting up the appropriate hunts to detect these lateral movement techniques."""
+        )
+    )]
+
+
+def _get_rapid_ir_deployment_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
+    """Generate the rapid_ir_deployment prompt."""
+    target_count = arguments.get("target_count", "unknown")
+    environment = arguments.get("environment", "mixed")
+
+    return [PromptMessage(
+        role="user",
+        content=TextContent(
+            type="text",
+            text=f"""I need to rapidly deploy Velociraptor for an active incident response.
+
+**Target Environment:**
+- Approximate endpoint count: {target_count}
+- Environment type: {environment}
+
+Please guide me through rapid deployment:
+
+## Phase 1: Server Deployment (Target: 2-5 minutes)
+
+1. **Deploy Server**
+   Use deploy_server_docker() with profile='rapid' for fastest deployment.
+   This will:
+   - Spin up a containerized Velociraptor server
+   - Generate PKI certificates automatically
+   - Configure auto-destruction after 72 hours
+   - Return admin credentials (SAVE THESE - shown only once!)
+
+2. **Verify Server Health**
+   Use get_deployment_status() to confirm the server is running
+
+## Phase 2: Agent Deployment (Choose based on environment)
+
+For **Windows Domain** environments:
+- generate_gpo_package() - GPO deployment for domain-joined systems
+- deploy_agents_winrm() - Direct push for immediate deployment
+
+For **Linux/macOS** environments:
+- deploy_agents_ssh() - Direct push via SSH
+- generate_ansible_playbook() - For IaC/Ansible environments
+
+For **Mixed** environments:
+- Generate installers for each OS type with generate_agent_installer()
+- Use appropriate push method per platform
+
+For **Cloud** environments:
+- generate_ansible_playbook() with appropriate platforms
+- Consider deploy_server_cloud() for cloud-native deployment
+
+## Phase 3: Verify Deployment
+
+1. Use check_agent_deployment() to verify agents are enrolling
+2. Confirm client count in Velociraptor GUI
+
+## Phase 4: Begin Collection
+
+Once agents are enrolled:
+1. Create urgent collection with collect_artifact()
+2. Or create a hunt with create_hunt() for mass collection
+
+**Time-Critical Artifacts for Immediate Collection:**
+- Windows.System.Pslist - Running processes
+- Windows.Network.Netstat - Network connections
+- Windows.Detection.Autoruns - Persistence mechanisms
+- Windows.EventLogs.Evtx - Security event logs
+
+Let's start immediately with Phase 1. Deploy the server now."""
+        )
+    )]
+
+
+def _get_deploy_and_triage_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
+    """Generate the deploy_and_triage prompt."""
+    incident_type = arguments.get("incident_type", "unknown")
+    affected_systems = arguments.get("affected_systems", "")
+
+    # Artifact recommendations by incident type
+    artifact_sets = {
+        "ransomware": [
+            "Windows.Detection.Ransomware",
+            "Windows.Forensics.Usn",
+            "Windows.System.Pslist",
+            "Windows.Detection.Autoruns",
+            "Windows.Network.Netstat",
+        ],
+        "intrusion": [
+            "Windows.EventLogs.Evtx",
+            "Windows.Detection.Autoruns",
+            "Windows.System.Pslist",
+            "Windows.Network.Netstat",
+            "Windows.Forensics.SRUM",
+        ],
+        "malware": [
+            "Windows.System.Pslist",
+            "Windows.Detection.Autoruns",
+            "Windows.Forensics.Prefetch",
+            "Windows.Detection.Amcache",
+            "Windows.Network.Netstat",
+        ],
+        "data_breach": [
+            "Windows.Forensics.Usn",
+            "Windows.EventLogs.Evtx",
+            "Windows.Network.Netstat",
+            "Windows.Forensics.SRUM",
+            "Windows.System.Pslist",
+        ],
+        "unknown": [
+            "Windows.KapeFiles.Targets",
+            "Windows.System.Pslist",
+            "Windows.Network.Netstat",
+            "Windows.Detection.Autoruns",
+        ],
+    }
+
+    recommended = artifact_sets.get(incident_type, artifact_sets["unknown"])
+
+    return [PromptMessage(
+        role="user",
+        content=TextContent(
+            type="text",
+            text=f"""URGENT: Deploy Velociraptor and begin immediate triage.
+
+**Incident Type:** {incident_type}
+**Affected Systems:** {affected_systems}
+
+## Immediate Actions
+
+### Step 1: Rapid Server Deployment
+
+Deploy with rapid profile for fastest setup:
+```
+deploy_server_docker(profile="rapid")
+```
+
+Save the admin password - it's shown only once!
+
+### Step 2: Deploy Agents to Affected Systems
+
+Parse the affected systems list: {affected_systems}
+
+For Windows systems, use:
+```
+deploy_agents_winrm(deployment_id, targets=[...], username, password)
+```
+
+For Linux systems, use:
+```
+deploy_agents_ssh(deployment_id, targets=[...], username, key_path)
+```
+
+### Step 3: Verify Enrollment
+
+Check that agents have enrolled:
+```
+check_agent_deployment(deployment_id)
+```
+
+### Step 4: Immediate Triage Collection
+
+For {incident_type} incidents, collect these artifacts urgently:
+{chr(10).join('- ' + a for a in recommended)}
+
+Create an urgent collection:
+```
+collect_artifact(client_id, artifacts={recommended}, urgent=True)
+```
+
+Or create a hunt for all affected systems:
+```
+create_hunt(artifacts={recommended}, include_labels=["incident"])
+```
+
+### Step 5: Initial Analysis
+
+Once collection completes:
+1. Check process list for malicious processes
+2. Review network connections for C2 communication
+3. Examine persistence mechanisms
+4. Check event logs for suspicious activity
+
+## Priority Actions for {incident_type.upper()}
+
+{"- Look for encryption processes and ransom notes" if incident_type == "ransomware" else ""}
+{"- Identify initial access vector and lateral movement" if incident_type == "intrusion" else ""}
+{"- Locate malware binaries and analyze behavior" if incident_type == "malware" else ""}
+{"- Identify accessed data and exfiltration methods" if incident_type == "data_breach" else ""}
+
+Let's begin deployment immediately. Time is critical."""
+        )
+    )]
+
+
+def _get_offline_collection_kit_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
+    """Generate the offline_collection_kit prompt."""
+    target_os = arguments.get("target_os", "windows")
+    collection_type = arguments.get("collection_type", "triage")
+
+    artifact_sets = {
+        "windows": {
+            "triage": ["Windows.KapeFiles.Targets", "Windows.System.Pslist", "Windows.Network.Netstat"],
+            "full": ["Windows.KapeFiles.Targets", "Windows.System.Pslist", "Windows.Network.Netstat", "Windows.EventLogs.Evtx", "Windows.Forensics.SRUM"],
+            "memory": ["Windows.Memory.Acquisition"],
+        },
+        "linux": {
+            "triage": ["Linux.Sys.Pslist", "Linux.Network.Netstat", "Linux.Sys.Users"],
+            "full": ["Linux.Sys.Pslist", "Linux.Network.Netstat", "Linux.Sys.Users", "Linux.Sys.Crontab", "Linux.Forensics.Journal"],
+            "memory": ["Linux.Memory.Acquisition"],
+        },
+        "macos": {
+            "triage": ["MacOS.Sys.Pslist", "MacOS.Network.Netstat", "MacOS.Sys.Users"],
+            "full": ["MacOS.Sys.Pslist", "MacOS.Network.Netstat", "MacOS.Sys.Users", "MacOS.Sys.LaunchAgents"],
+            "memory": ["MacOS.Memory.Acquisition"],
+        },
+    }
+
+    os_artifacts = artifact_sets.get(target_os, artifact_sets["windows"])
+    selected_artifacts = os_artifacts.get(collection_type, os_artifacts["triage"])
+
+    return [PromptMessage(
+        role="user",
+        content=TextContent(
+            type="text",
+            text=f"""I need to create an offline collection kit for air-gapped or isolated systems.
+
+**Target OS:** {target_os}
+**Collection Type:** {collection_type}
+
+## Creating the Offline Collection Kit
+
+### Step 1: Generate the Collector
+
+Use create_offline_collector() to generate a self-contained collection package:
+
+```
+create_offline_collector(
+    artifacts={selected_artifacts},
+    target_os="{target_os}",
+    encrypt_output=True  # Recommended for sensitive data
+)
+```
+
+This will create a package containing:
+- Collection script (batch/shell)
+- Artifact definitions
+- Usage instructions
+
+### Step 2: Transfer to Air-Gapped System
+
+Transfer the generated package to the isolated system via:
+- USB drive
+- Secure file transfer
+- Physical media
+
+### Step 3: Run Collection
+
+On the target system:
+
+{"**Windows:**" if target_os == "windows" else ""}
+{"1. Extract the ZIP file" if target_os == "windows" else ""}
+{"2. Right-click 'collect.bat' and Run as Administrator" if target_os == "windows" else ""}
+{"3. Wait for collection to complete" if target_os == "windows" else ""}
+
+{"**Linux/macOS:**" if target_os != "windows" else ""}
+{"1. Extract: tar -xzf velociraptor-collector-*.tar.gz" if target_os != "windows" else ""}
+{"2. Run: sudo ./collect.sh" if target_os != "windows" else ""}
+{"3. Wait for collection to complete" if target_os != "windows" else ""}
+
+### Step 4: Retrieve Results
+
+Copy the 'collection_*' output folder back to your analysis system.
+
+If encryption was enabled, you'll need the password provided during generation.
+
+### Step 5: Analyze Results
+
+Import the collected data into Velociraptor server or analyze directly:
+- JSON files contain structured artifact data
+- Can be processed with VQL or standard analysis tools
+
+## Artifacts Included for {collection_type.upper()} Collection
+
+{chr(10).join('- ' + a for a in selected_artifacts)}
+
+## Security Considerations
+
+- Use encrypted output for sensitive environments
+- Secure the encryption password separately
+- Verify checksums after transfer
+- Maintain chain of custody documentation
+
+Would you like me to generate the collection kit now?"""
         )
     )]

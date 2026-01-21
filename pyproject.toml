@@ -34,6 +34,25 @@ dev = [
     "pytest-asyncio>=0.21.0",
 ]
 
+deployment = [
+    "docker>=7.0.0",           # Docker deployment
+    "cryptography>=42.0.0",    # Certificate generation, credential encryption
+    "jinja2>=3.1.0",           # Config templates
+    "paramiko>=3.4.0",         # SSH deployment
+    "httpx>=0.27.0",           # Health checks
+    "pywinrm>=0.4.3",          # WinRM deployment
+]
+
+cloud = [
+    "boto3>=1.34.0",              # AWS CloudFormation
+    "azure-mgmt-resource>=23.0", # Azure ARM
+    "azure-identity>=1.15.0",    # Azure auth
+]
+
+all = [
+    "megaraptor-mcp[deployment,cloud]",
+]
+
 [project.scripts]
 megaraptor-mcp = "megaraptor_mcp.server:main"
 

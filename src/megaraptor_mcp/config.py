@@ -8,9 +8,9 @@ Supports two authentication methods:
 
 import os
 import yaml
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 
 @dataclass
@@ -154,3 +154,87 @@ def load_config() -> VelociraptorConfig:
         "or set VELOCIRAPTOR_API_URL, VELOCIRAPTOR_CLIENT_CERT, "
         "VELOCIRAPTOR_CLIENT_KEY, and VELOCIRAPTOR_CA_CERT environment variables."
     )
+
+
+@dataclass
+class DeploymentConfig:
+    """Configuration for Velociraptor deployment operations.
+
+    Attributes:
+        deployment_id: Unique identifier for this deployment
+        profile: Deployment profile (rapid, standard, enterprise)
+        target: Deployment target (docker, binary, aws, azure)
+        server_hostname: Hostname for the Velociraptor server
+        bind_address: Address to bind the server to
+        gui_port: Port for the GUI/API
+        frontend_port: Port for client connections
+        data_path: Path for Velociraptor data storage
+        log_path: Path for log files
+        admin_username: Admin user for initial setup
+        enable_monitoring: Enable health monitoring
+        ssl_pinning: Enable SSL certificate pinning
+        auto_destroy_at: ISO timestamp for auto-destruction (None = never)
+        extra_config: Additional configuration options
+    """
+    deployment_id: str
+    profile: str = "standard"
+    target: str = "docker"
+    server_hostname: str = "localhost"
+    bind_address: str = "0.0.0.0"
+    gui_port: int = 8889
+    frontend_port: int = 8000
+    data_path: str = "/opt/velociraptor/data"
+    log_path: str = "/opt/velociraptor/logs"
+    admin_username: str = "admin"
+    enable_monitoring: bool = True
+    ssl_pinning: bool = True
+    auto_destroy_at: Optional[str] = None
+    extra_config: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "deployment_id": self.deployment_id,
+            "profile": self.profile,
+            "target": self.target,
+            "server_hostname": self.server_hostname,
+            "bind_address": self.bind_address,
+            "gui_port": self.gui_port,
+            "frontend_port": self.frontend_port,
+            "data_path": self.data_path,
+            "log_path": self.log_path,
+            "admin_username": self.admin_username,
+            "enable_monitoring": self.enable_monitoring,
+            "ssl_pinning": self.ssl_pinning,
+            "auto_destroy_at": self.auto_destroy_at,
+            "extra_config": self.extra_config,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "DeploymentConfig":
+        """Create from dictionary."""
+        return cls(
+            deployment_id=data["deployment_id"],
+            profile=data.get("profile", "standard"),
+            target=data.get("target", "docker"),
+            server_hostname=data.get("server_hostname", "localhost"),
+            bind_address=data.get("bind_address", "0.0.0.0"),
+            gui_port=data.get("gui_port", 8889),
+            frontend_port=data.get("frontend_port", 8000),
+            data_path=data.get("data_path", "/opt/velociraptor/data"),
+            log_path=data.get("log_path", "/opt/velociraptor/logs"),
+            admin_username=data.get("admin_username", "admin"),
+            enable_monitoring=data.get("enable_monitoring", True),
+            ssl_pinning=data.get("ssl_pinning", True),
+            auto_destroy_at=data.get("auto_destroy_at"),
+            extra_config=data.get("extra_config", {}),
+        )
+
+
+def generate_deployment_id() -> str:
+    """Generate a unique deployment identifier."""
+    import secrets
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d")
+    random_suffix = secrets.token_hex(4)
+    return f"vr-{timestamp}-{random_suffix}"
