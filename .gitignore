@@ -54,3 +54,41 @@ api_client.yaml
 # OS files
 .DS_Store
 Thumbs.db
+
+# Megaraptor MCP Deployment Data
+# ==============================
+
+# Encrypted credential store and keys
+credentials.enc
+.keyfile
+
+# Generated deployment directories
+deployments/
+installers/
+collectors/
+gpo/
+docs/
+
+# Generated Ansible playbooks (contain CA certs)
+ansible/velociraptor-deploy-*/
+
+# Generated server/client configurations (contain secrets)
+server.config.yaml
+client.config.yaml
+*.writeback.yaml
+
+# Generated cloud templates (may contain secrets)
+cloudformation.yaml
+arm_template.json
+docker-compose.generated.yaml
+
+# Collection artifacts
+collection_*/
+collector_info.json
+
+# Generated service files
+velociraptor.service
+com.velocidex.velociraptor.plist
+
+# Populated inventory files (may contain credentials)
+inventory.yml
