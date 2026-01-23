@@ -150,8 +150,8 @@ cmd_generate_config() {
     mkdir -p "$FIXTURES_DIR"
 
     # Generate server config
-    docker run --rm velocidex/velociraptor:latest \
-        config generate \
+    docker run --rm --entrypoint "" wlambert/velociraptor:latest \
+        /opt/velociraptor/linux/velociraptor config generate \
         --merge '{"Frontend": {"hostname": "localhost", "bind_address": "0.0.0.0"}, "GUI": {"bind_address": "0.0.0.0"}, "API": {"bind_address": "0.0.0.0"}}' \
         > "$SERVER_CONFIG"
 
@@ -163,8 +163,8 @@ cmd_generate_config() {
     log_info "Server config generated: $SERVER_CONFIG"
 
     # Extract client config from server config
-    docker run --rm -v "$FIXTURES_DIR:/config" velocidex/velociraptor:latest \
-        config client --config /config/server.config.yaml \
+    docker run --rm --entrypoint "" -v "$FIXTURES_DIR:/config" wlambert/velociraptor:latest \
+        /opt/velociraptor/linux/velociraptor config client --config /config/server.config.yaml \
         > "$CLIENT_CONFIG"
 
     if [[ ! -s "$CLIENT_CONFIG" ]]; then

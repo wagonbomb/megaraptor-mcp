@@ -144,7 +144,7 @@ def docker_compose_up(docker_available: bool, velociraptor_configs_exist: bool) 
         )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def velociraptor_api_config(docker_compose_up: bool) -> dict:
     """Provide Velociraptor API configuration for tests.
 
@@ -155,7 +155,7 @@ def velociraptor_api_config(docker_compose_up: bool) -> dict:
         pytest.skip("Velociraptor infrastructure not running")
 
     return {
-        "api_url": "https://localhost:8001",
+        "api_url": "https://localhost:18001",
         "config_path": str(API_CLIENT_CONFIG),
         "server_config_path": str(SERVER_CONFIG),
     }

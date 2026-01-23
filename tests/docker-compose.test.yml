@@ -10,38 +10,38 @@
 
 services:
   velociraptor-server:
-    image: velocidex/velociraptor:latest
+    image: wlambert/velociraptor:latest
     container_name: vr-test-server
+    entrypoint: ["/bin/bash", "-c"]
     command:
-      - "frontend"
-      - "--config"
-      - "/config/server.config.yaml"
-      - "-v"
+      - |
+        cp /opt/velociraptor/linux/velociraptor /tmp/velociraptor && chmod +x /tmp/velociraptor
+        /tmp/velociraptor --config /config/server.config.yaml frontend -v
     volumes:
       - vr-server-data:/data
       - ./fixtures:/config:ro
     ports:
-      - "8889:8889"   # GUI
-      - "8000:8000"   # Frontend (client connections)
-      - "8001:8001"   # API (gRPC)
+      - "18889:8889"  # GUI
+      - "18000:8000"  # Frontend (client connections)
+      - "18001:8001"  # API (gRPC)
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8889/app/index.html || exit 1"]
+      test: ["CMD-SHELL", "curl -ks https://localhost:8889/ | grep -q 'Redirect' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 60s
     networks:
       - vr-test-net
     restart: unless-stopped
 
   velociraptor-client:
-    image: velocidex/velociraptor:latest
+    image: wlambert/velociraptor:latest
     container_name: vr-test-client
+    entrypoint: ["/bin/bash", "-c"]
     command:
-      - "client"
-      - "--config"
-      - "/config/client.config.yaml"
-      - "-v"
+      - |
+        cp /opt/velociraptor/linux/velociraptor /tmp/velociraptor && chmod +x /tmp/velociraptor
+        /tmp/velociraptor --config /config/client.config.yaml client -v
     volumes:
       - ./fixtures:/config:ro
     depends_on:
