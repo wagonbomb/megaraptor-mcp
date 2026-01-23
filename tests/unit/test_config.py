@@ -8,6 +8,7 @@ import yaml
 from megaraptor_mcp.config import VelociraptorConfig, load_config
 
 
+@pytest.mark.unit
 class TestVelociraptorConfig:
     """Tests for VelociraptorConfig class."""
 
@@ -75,6 +76,7 @@ class TestVelociraptorConfig:
         config.validate()
 
 
+@pytest.mark.unit
 class TestLoadConfig:
     """Tests for load_config function."""
 

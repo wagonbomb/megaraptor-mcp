@@ -1,0 +1,10 @@
+# Ignore generated Velociraptor configs (contain secrets)
+server.config.yaml
+client.config.yaml
+api_client.yaml
+
+# Ignore any other generated files
+*.generated
+*.key
+*.pem
+*.crt
