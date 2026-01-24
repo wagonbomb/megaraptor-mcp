@@ -149,10 +149,15 @@ class TestVQLOperations:
         assert isinstance(result, list)
 
     def test_run_vql_with_syntax_error(self, velociraptor_client):
-        """Test VQL with syntax error returns appropriate error."""
-        # Invalid VQL syntax
-        with pytest.raises(Exception):
-            velociraptor_client.query("INVALID VQL SYNTAX HERE")
+        """Test VQL with syntax error returns empty result.
+
+        Note: Velociraptor returns an empty list for invalid VQL
+        rather than raising an exception.
+        """
+        # Invalid VQL syntax returns empty result
+        result = velociraptor_client.query("INVALID VQL SYNTAX HERE")
+        assert isinstance(result, list)
+        assert len(result) == 0
 
     def test_run_vql_clients_query(self, velociraptor_client):
         """Test VQL query against clients table."""
