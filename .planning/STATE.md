@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 2 of 6 (Smoke Tests) - IN PROGRESS
-Plan: 1 of 4 complete (02-01-PLAN.md)
+Plan: 3 of 4 complete (02-03-PLAN.md)
 Status: Phase 2 in progress
-Last activity: 2026-01-25 — Completed 02-01-PLAN.md
+Last activity: 2026-01-25 — Completed 02-03-PLAN.md
 
-Progress: [██░░░░░░░░] 17% (1 of 6 phases complete, Phase 2: 25% complete)
+Progress: [██░░░░░░░░] 17% (1 of 6 phases complete, Phase 2: 75% complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 3.5 min
-- Total execution time: 0.23 hours
+- Total plans completed: 5
+- Average duration: 3.4 min
+- Total execution time: 0.28 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
-| 02-smoke-tests | 1 | 4min | 4.0min |
+| 02-smoke-tests | 2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 3min, 4min, 3min, 4min
-- Trend: Consistent velocity
+- Last 5 plans: 4min, 3min, 4min, 3min
+- Trend: Consistent velocity ~3-4min per plan
 
 *Updated after each plan completion*
 
@@ -68,6 +68,11 @@ Recent decisions affecting current work:
 - Module scope for target_registry and enrolled_client_id fixtures
 - Register smoke marker in pytest configuration
 
+**From 02-03 execution:**
+- Use flexible field name matching (e.g., 'Hostname' or 'hostname' or 'Fqdn') to support multiple Velociraptor versions
+- Wait for artifact completion in smoke tests when validating result structures (exception to general smoke test rule)
+- Apply 30s timeout to individual flows plus 60s pytest timeout for defense in depth
+
 ### Pending Todos
 
 None yet.
@@ -80,10 +85,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T22:23:43Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-01-25T22:28:49Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: /gsd:execute-phase 02-02*
+*Next step: /gsd:execute-phase 02-04*
