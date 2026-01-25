@@ -1,0 +1,154 @@
+# Roadmap: Megaraptor MCP
+
+## Overview
+
+This roadmap validates all 35 MCP tools against real Velociraptor deployments through progressive testing layers. Starting with foundational test infrastructure and connection lifecycle patterns, we establish smoke tests for basic functionality, validate error handling across failure modes, expand to OS-specific artifacts, verify forensic output quality, and culminate in end-to-end deployment validation. Each phase builds verifiable capabilities that unblock the next, ensuring all tools work reliably in production DFIR workflows.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Test Infrastructure** - Foundation for all validation testing
+- [ ] **Phase 2: Smoke Tests** - Basic tool functionality verification
+- [ ] **Phase 3: Error Handling** - Failure mode and edge case validation
+- [ ] **Phase 4: OS-Specific Artifacts** - Multi-platform artifact validation
+- [ ] **Phase 5: Output Quality** - Forensic soundness and correctness
+- [ ] **Phase 6: Deployment & Gap Analysis** - End-to-end deployment validation
+
+## Phase Details
+
+### Phase 1: Test Infrastructure
+**Goal**: All validation tests can reliably connect to Velociraptor, manage container lifecycle, wait for async operations, and clean up test artifacts without state pollution
+
+**Depends on**: Nothing (first phase)
+
+**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06
+
+**Success Criteria** (what must be TRUE):
+  1. Test suite starts and stops Velociraptor container automatically via pytest-docker
+  2. VelociraptorClient fixture establishes connections with proper lifecycle (no connection leaks)
+  3. Cleanup fixtures remove all test-created entities (hunts, flows, labels) after each test
+  4. wait_for_flow_completion helper reliably detects async operation completion without race conditions
+  5. Certificate expiration monitoring alerts before test infrastructure fails
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+### Phase 2: Smoke Tests
+**Goal**: All 35 MCP tools are callable against live Velociraptor and return valid, parseable responses for basic operations
+
+**Depends on**: Phase 1
+
+**Requirements**: SMOKE-01, SMOKE-02, SMOKE-03, SMOKE-04, SMOKE-05, SMOKE-06, SMOKE-07
+
+**Success Criteria** (what must be TRUE):
+  1. User can invoke all 35 MCP tools and receive non-error responses
+  2. Generic.Client.Info artifact collection completes and returns valid client metadata
+  3. Generic.System.Pslist returns process list with expected structure (PID, name, command line)
+  4. Basic VQL queries execute without syntax errors and return results
+  5. All tool outputs validate against JSON schemas for AI assistant parsing
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+### Phase 3: Error Handling
+**Goal**: All MCP tools handle failure scenarios gracefully with actionable error messages and no exposed stack traces
+
+**Depends on**: Phase 2
+
+**Requirements**: ERR-01, ERR-02, ERR-03, ERR-04, ERR-05, ERR-06, ERR-07
+
+**Success Criteria** (what must be TRUE):
+  1. Network timeouts return clear error messages instead of hanging or crashing
+  2. Malformed VQL syntax errors provide correction hints to users
+  3. Requests for non-existent resources (clients, hunts, flows) return 404-style errors with context
+  4. Invalid parameters (negative limits, empty IDs) are validated with clear messages before execution
+  5. Authentication and permission errors are caught and reported without stack traces
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+### Phase 4: OS-Specific Artifacts
+**Goal**: Artifact collection works across Linux and Windows targets with proper OS-specific validation
+
+**Depends on**: Phase 2
+
+**Requirements**: OSART-01, OSART-02, OSART-03, OSART-04, OSART-05
+
+**Success Criteria** (what must be TRUE):
+  1. Linux.Sys.Users artifact collection returns valid user account data from Linux targets
+  2. Windows.System.Services artifact collection returns service data from Windows targets (if available)
+  3. Windows registry artifacts (UserAssist or similar) parse and validate correctly
+  4. TargetRegistry selects appropriate test targets based on OS and artifact capabilities
+  5. Complex artifact types (registry, binary parsing) validate against OS-specific schemas
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+### Phase 5: Output Quality
+**Goal**: All artifact collections produce forensically sound output with verifiable correctness against known-good baselines
+
+**Depends on**: Phase 4
+
+**Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04, QUAL-05, QUAL-06
+
+**Success Criteria** (what must be TRUE):
+  1. Collected artifact file hashes match expected values from known-good baselines
+  2. Timestamp accuracy is validated within acceptable drift (±1 second)
+  3. All expected fields are present and populated in artifact collections
+  4. VQL query results match known-good baselines for correctness
+  5. Test fixtures with known-good datasets are documented in tests/fixtures/README.md
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+### Phase 6: Deployment & Gap Analysis
+**Goal**: Deployment automation works end-to-end for Docker and binary profiles, and all capability gaps are documented
+
+**Depends on**: Phase 5
+
+**Requirements**: DEPLOY-01, DEPLOY-02, DEPLOY-03, DEPLOY-04, DEPLOY-05, DEPLOY-06, GAP-01, GAP-02, GAP-03
+
+**Success Criteria** (what must be TRUE):
+  1. Docker deployment profile creates accessible, working Velociraptor server
+  2. Binary deployment profile creates working server on target system
+  3. Full investigation workflow (triage to collection to analysis) completes end-to-end
+  4. Deployment rollback successfully cleans up all resources
+  5. Gap analysis document identifies missing tool capabilities and improvement recommendations
+
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during plan-phase)
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Test Infrastructure | 0/TBD | Not started | - |
+| 2. Smoke Tests | 0/TBD | Not started | - |
+| 3. Error Handling | 0/TBD | Not started | - |
+| 4. OS-Specific Artifacts | 0/TBD | Not started | - |
+| 5. Output Quality | 0/TBD | Not started | - |
+| 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
+
+---
+*Roadmap created: 2026-01-25*
+*Milestone: v1.0 Quality & Real-World Validation*
