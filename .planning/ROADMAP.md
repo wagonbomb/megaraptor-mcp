@@ -35,10 +35,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. wait_for_flow_completion helper reliably detects async operation completion without race conditions
   5. Certificate expiration monitoring alerts before test infrastructure fails
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 01-01-PLAN.md — Dependencies and enhanced client fixture with lifecycle management
+- [ ] 01-02-PLAN.md — Wait helpers and cleanup fixtures for async operations and state isolation
+- [ ] 01-03-PLAN.md — Target registry and certificate expiration monitoring
 
 ### Phase 2: Smoke Tests
 **Goal**: All 35 MCP tools are callable against live Velociraptor and return valid, parseable responses for basic operations
@@ -142,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Test Infrastructure | 0/TBD | Not started | - |
+| 1. Test Infrastructure | 0/3 | Planned | - |
 | 2. Smoke Tests | 0/TBD | Not started | - |
 | 3. Error Handling | 0/TBD | Not started | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |
