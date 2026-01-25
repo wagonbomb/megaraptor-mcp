@@ -7,51 +7,10 @@ The tests verify that the MCP tools correctly interact with a real
 Velociraptor server and enrolled client.
 """
 
-import asyncio
-import time
-from pathlib import Path
-
 import pytest
 
 # These tests require Docker infrastructure
 pytestmark = [pytest.mark.integration, pytest.mark.slow]
-
-
-@pytest.fixture(scope="module")
-def event_loop():
-    """Create an event loop for async tests."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="module")
-def velociraptor_client(docker_compose_up, velociraptor_api_config):
-    """Create a Velociraptor client for testing.
-
-    This fixture creates a VelociraptorClient connected to the test server.
-    """
-    if not docker_compose_up:
-        pytest.skip("Docker infrastructure not available")
-
-    try:
-        from megaraptor_mcp.client import VelociraptorClient
-        from megaraptor_mcp.config import VelociraptorConfig
-
-        # Load config from the API client file
-        config_path = velociraptor_api_config["config_path"]
-
-        if not Path(config_path).exists():
-            pytest.skip(f"API client config not found: {config_path}")
-
-        config = VelociraptorConfig.from_config_file(config_path)
-        client = VelociraptorClient(config)
-        return client
-
-    except ImportError as e:
-        pytest.skip(f"Required module not available: {e}")
-    except Exception as e:
-        pytest.skip(f"Failed to create Velociraptor client: {e}")
 
 
 class TestClientManagement:
