@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 1 of 6 (Test Infrastructure)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-25 — Completed 01-01-PLAN.md
+Last activity: 2026-01-25 — Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 3 min
-- Total execution time: 0.05 hours
+- Total plans completed: 2
+- Average duration: 3.5 min
+- Total execution time: 0.12 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-test-infrastructure | 1 | 3min | 3min |
+| 01-test-infrastructure | 2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 3min
-- Trend: Baseline established
+- Last 5 plans: 3min, 4min
+- Trend: Consistent velocity
 
 *Updated after each plan completion*
 
@@ -51,6 +51,11 @@ Recent decisions affecting current work:
 - Explicit connect/close calls for clear lifecycle management
 - Autouse fixture for global client state reset between tests
 
+**From 01-02 execution:**
+- Best-effort cleanup: log warnings but don't fail tests if cleanup errors occur
+- Function-scoped autouse fixture for cleanup: runs after every test to prevent pollution
+- TEST- prefix convention: All test entities use TEST- prefix for easy identification
+
 ### Pending Todos
 
 None yet.
@@ -63,8 +68,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T20:47:05Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-01-25T20:54:30Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
 
 ---
