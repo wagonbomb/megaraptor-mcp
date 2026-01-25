@@ -12,7 +12,7 @@ This roadmap validates all 35 MCP tools against real Velociraptor deployments th
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Test Infrastructure** - Foundation for all validation testing
+- [x] **Phase 1: Test Infrastructure** - Foundation for all validation testing
 - [ ] **Phase 2: Smoke Tests** - Basic tool functionality verification
 - [ ] **Phase 3: Error Handling** - Failure mode and edge case validation
 - [ ] **Phase 4: OS-Specific Artifacts** - Multi-platform artifact validation
@@ -29,18 +29,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06
 
 **Success Criteria** (what must be TRUE):
-  1. Test suite starts and stops Velociraptor container automatically via pytest-docker
+  1. Test suite starts and stops Velociraptor container automatically (subprocess approach, pytest-docker deferred)
   2. VelociraptorClient fixture establishes connections with proper lifecycle (no connection leaks)
   3. Cleanup fixtures remove all test-created entities (hunts, flows, labels) after each test
   4. wait_for_flow_completion helper reliably detects async operation completion without race conditions
   5. Certificate expiration monitoring alerts before test infrastructure fails
 
-**Plans**: 3 plans
+**Plans**: 3 plans ✓
 
 Plans:
-- [ ] 01-01-PLAN.md — Dependencies and enhanced client fixture with lifecycle management
-- [ ] 01-02-PLAN.md — Wait helpers and cleanup fixtures for async operations and state isolation
-- [ ] 01-03-PLAN.md — Target registry and certificate expiration monitoring
+- [x] 01-01-PLAN.md — Dependencies and enhanced client fixture with lifecycle management
+- [x] 01-02-PLAN.md — Wait helpers and cleanup fixtures for async operations and state isolation
+- [x] 01-03-PLAN.md — Target registry and certificate expiration monitoring
 
 ### Phase 2: Smoke Tests
 **Goal**: All 35 MCP tools are callable against live Velociraptor and return valid, parseable responses for basic operations
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Test Infrastructure | 0/3 | Planned | - |
+| 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
 | 2. Smoke Tests | 0/TBD | Not started | - |
 | 3. Error Handling | 0/TBD | Not started | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |

@@ -9,12 +9,12 @@ Requirements for milestone v1.0 Quality & Real-World Validation. Each maps to ro
 
 ### Test Infrastructure
 
-- [ ] **INFRA-01**: Test suite integrates pytest-docker for container lifecycle management
-- [ ] **INFRA-02**: Module-scoped VelociraptorClient fixture with explicit connection lifecycle
-- [ ] **INFRA-03**: Cleanup fixtures remove Velociraptor entities (hunts, flows, labels) after tests
-- [ ] **INFRA-04**: wait_for_flow_completion helper polls for async operation completion
-- [ ] **INFRA-05**: Certificate expiration monitoring integrated into test infrastructure
-- [ ] **INFRA-06**: TargetRegistry provides capability-based target selection (OS, artifact support)
+- [x] **INFRA-01**: Test suite manages container lifecycle automatically (subprocess approach, pytest-docker deferred)
+- [x] **INFRA-02**: Module-scoped VelociraptorClient fixture with explicit connection lifecycle
+- [x] **INFRA-03**: Cleanup fixtures remove Velociraptor entities (hunts, flows, labels) after tests
+- [x] **INFRA-04**: wait_for_flow_completion helper polls for async operation completion
+- [x] **INFRA-05**: Certificate expiration monitoring integrated into test infrastructure
+- [x] **INFRA-06**: TargetRegistry provides capability-based target selection (OS, artifact support)
 
 ### Smoke Tests
 
@@ -110,12 +110,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
-| INFRA-06 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
+| INFRA-04 | Phase 1 | Complete |
+| INFRA-05 | Phase 1 | Complete |
+| INFRA-06 | Phase 1 | Complete |
 | SMOKE-01 | Phase 2 | Pending |
 | SMOKE-02 | Phase 2 | Pending |
 | SMOKE-03 | Phase 2 | Pending |
