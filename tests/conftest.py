@@ -241,6 +241,50 @@ def mock_velociraptor_config(tmp_path: Path) -> dict:
     }
 
 
+@pytest.fixture(scope="module")
+def velociraptor_client(docker_compose_up, velociraptor_api_config):
+    """Create module-scoped Velociraptor client with lifecycle management.
+
+    Reuses gRPC connection across all tests in a module to prevent
+    connection exhaustion (gRPC channels should be long-lived).
+    """
+    if not docker_compose_up:
+        pytest.skip("Docker infrastructure not available")
+
+    from megaraptor_mcp.client import VelociraptorClient, reset_client
+    from megaraptor_mcp.config import VelociraptorConfig
+
+    config_path = velociraptor_api_config["config_path"]
+    if not Path(config_path).exists():
+        pytest.skip(f"API client config not found: {config_path}")
+
+    config = VelociraptorConfig.from_config_file(config_path)
+    client = VelociraptorClient(config)
+
+    # Explicit connection
+    client.connect()
+
+    yield client
+
+    # Explicit cleanup
+    try:
+        client.close()
+    finally:
+        reset_client()  # Reset global client state
+
+
+@pytest.fixture(autouse=True)
+def reset_global_client_state():
+    """Reset global client before each test for isolation.
+
+    Mitigates global _client instance to prevent state leakage.
+    """
+    from megaraptor_mcp.client import reset_client
+    reset_client()
+    yield
+    reset_client()
+
+
 # Autouse fixture for test isolation
 @pytest.fixture(autouse=True)
 def isolate_test_artifacts(tmp_path: Path, monkeypatch) -> Generator[None, None, None]:
