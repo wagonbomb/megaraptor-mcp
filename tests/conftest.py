@@ -31,6 +31,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "unit: Unit tests (no external dependencies)")
     config.addinivalue_line("markers", "integration: Requires Docker infrastructure")
     config.addinivalue_line("markers", "slow: Long-running tests")
+    config.addinivalue_line("markers", "smoke: Smoke tests (quick validation)")
 
 
 def has_docker() -> bool:
@@ -348,7 +349,7 @@ def cleanup_velociraptor_state(request, velociraptor_client):
         print(f"Cleanup warning for {test_name}: {e}")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def target_registry(docker_compose_up, velociraptor_client):
     """Provide registry of available test targets.
 
@@ -382,7 +383,7 @@ def target_registry(docker_compose_up, velociraptor_client):
     return registry
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def enrolled_client_id(target_registry):
     """Get the first enrolled client ID.
 
