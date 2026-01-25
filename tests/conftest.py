@@ -346,3 +346,78 @@ def cleanup_velociraptor_state(request, velociraptor_client):
     except Exception as e:
         # Log cleanup failure but don't fail test
         print(f"Cleanup warning for {test_name}: {e}")
+
+
+@pytest.fixture(scope="session")
+def target_registry(docker_compose_up, velociraptor_client):
+    """Provide registry of available test targets.
+
+    Discovers enrolled clients and registers them with capabilities
+    for capability-based test targeting.
+    """
+    if not docker_compose_up:
+        pytest.skip("Docker infrastructure not available")
+
+    try:
+        from tests.integration.helpers.target_registry import TargetRegistry
+        from tests.integration.helpers.wait_helpers import wait_for_client_enrollment
+    except ImportError:
+        pytest.skip("Test helpers not available")
+
+    registry = TargetRegistry()
+
+    try:
+        # Wait for at least one client to enroll
+        wait_for_client_enrollment(velociraptor_client, timeout=60)
+
+        # Discover all enrolled clients
+        registry.discover_targets(velociraptor_client)
+
+    except TimeoutError:
+        pytest.skip("No clients enrolled within timeout")
+
+    if not registry:
+        pytest.skip("No test targets discovered")
+
+    return registry
+
+
+@pytest.fixture(scope="session")
+def enrolled_client_id(target_registry):
+    """Get the first enrolled client ID.
+
+    Convenience fixture for tests that just need any enrolled client.
+    """
+    if not target_registry.targets:
+        pytest.skip("No enrolled clients")
+
+    return target_registry.targets[0].client_id
+
+
+@pytest.fixture(scope="session", autouse=True)
+def check_certificate_expiration(velociraptor_api_config):
+    """Check certificate expiration at session start.
+
+    Issues warning if certificates expire within 30 days.
+    Fails session if certificates expire within 7 days.
+    """
+    try:
+        from tests.integration.helpers.cert_monitor import check_cert_expiration
+    except ImportError:
+        # Helpers not available - skip check
+        yield
+        return
+
+    config_path = velociraptor_api_config.get("config_path")
+    if not config_path:
+        yield
+        return
+
+    is_valid, days_left, message = check_cert_expiration(config_path)
+
+    if not is_valid:
+        pytest.fail(f"Certificate check failed: {message}")
+
+    yield
+
+    # No cleanup needed
