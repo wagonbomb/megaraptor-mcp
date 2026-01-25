@@ -304,3 +304,45 @@ def isolate_test_artifacts(tmp_path: Path, monkeypatch) -> Generator[None, None,
     yield
 
     # Cleanup is automatic with tmp_path
+
+
+@pytest.fixture(autouse=True, scope="function")
+def cleanup_velociraptor_state(request, velociraptor_client):
+    """Clean up Velociraptor entities after each test.
+
+    This autouse fixture runs after every integration test to remove:
+    - Hunts with TEST- prefix in description
+    - Labels with TEST- prefix from all clients
+
+    Prevents state pollution between tests.
+    """
+    test_name = request.node.name
+
+    yield  # Test runs here
+
+    # After test: cleanup (only if client is available)
+    if velociraptor_client is None:
+        return
+
+    try:
+        from tests.integration.helpers.cleanup_helpers import (
+            cleanup_test_hunts,
+            cleanup_test_labels,
+        )
+
+        # Archive test hunts
+        archived_hunts = cleanup_test_hunts(velociraptor_client, "TEST-")
+        if archived_hunts:
+            print(f"Cleanup [{test_name}]: Archived {len(archived_hunts)} hunt(s)")
+
+        # Remove test labels
+        cleaned_clients = cleanup_test_labels(velociraptor_client, "TEST-")
+        if cleaned_clients:
+            print(f"Cleanup [{test_name}]: Removed labels from {len(cleaned_clients)} client(s)")
+
+    except ImportError:
+        # Helpers not available yet (this is fine during plan execution)
+        pass
+    except Exception as e:
+        # Log cleanup failure but don't fail test
+        print(f"Cleanup warning for {test_name}: {e}")
