@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. wait_for_flow_completion helper reliably detects async operation completion without race conditions
   5. Certificate expiration monitoring alerts before test infrastructure fails
 
-**Plans**: 3 plans ✓
+**Plans**: 3 plans
 
 Plans:
 - [x] 01-01-PLAN.md — Dependencies and enhanced client fixture with lifecycle management
@@ -56,10 +56,13 @@ Plans:
   4. Basic VQL queries execute without syntax errors and return results
   5. All tool outputs validate against JSON schemas for AI assistant parsing
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 02-01-PLAN.md — Schema registry, MCP helpers, and server connectivity verification
+- [ ] 02-02-PLAN.md — Parametrized smoke tests for all 35 MCP tools
+- [ ] 02-03-PLAN.md — Artifact collection smoke tests (Generic.Client.Info, Generic.System.Pslist)
+- [ ] 02-04-PLAN.md — VQL execution and resource URI smoke tests
 
 ### Phase 3: Error Handling
 **Goal**: All MCP tools handle failure scenarios gracefully with actionable error messages and no exposed stack traces
@@ -145,7 +148,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
-| 2. Smoke Tests | 0/TBD | Not started | - |
+| 2. Smoke Tests | 0/4 | Planned | - |
 | 3. Error Handling | 0/TBD | Not started | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |
 | 5. Output Quality | 0/TBD | Not started | - |
