@@ -19,20 +19,20 @@ Progress: [██░░░░░░░░] 17% (1 of 6 phases complete, Phase 2:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 3.4 min
-- Total execution time: 0.28 hours
+- Total plans completed: 6
+- Average duration: 3.3 min
+- Total execution time: 0.33 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
-| 02-smoke-tests | 2 | 7min | 3.5min |
+| 02-smoke-tests | 3 | 10min | 3.3min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 3min, 4min, 3min
-- Trend: Consistent velocity ~3-4min per plan
+- Last 5 plans: 3min, 4min, 3min, 3min, 3min
+- Trend: Consistent velocity ~3min per plan
 
 *Updated after each plan completion*
 
@@ -68,6 +68,11 @@ Recent decisions affecting current work:
 - Module scope for target_registry and enrolled_client_id fixtures
 - Register smoke marker in pytest configuration
 
+**From 02-02 execution:**
+- TOOL_SMOKE_INPUTS as single source of truth for all 35 MCP tools
+- Deployment tools expected to fail gracefully in test environment (missing infrastructure)
+- Meta-test ensures no tools are missed as codebase evolves
+
 **From 02-03 execution:**
 - Use flexible field name matching (e.g., 'Hostname' or 'hostname' or 'Fqdn') to support multiple Velociraptor versions
 - Wait for artifact completion in smoke tests when validating result structures (exception to general smoke test rule)
@@ -85,10 +90,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T22:28:49Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-01-25T22:29:11Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: /gsd:execute-phase 02-04*
+*Next step: /gsd:execute-phase 02-04 (02-03 already complete)*
