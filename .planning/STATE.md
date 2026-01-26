@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 5 of 6 (Output Quality) - Complete
-Plan: 3 of 3 complete
-Status: All QUAL requirements verified — hash validation, timestamp accuracy, completeness, VQL correctness, NIST CFTT
-Last activity: 2026-01-26 — Completed Phase 5 (Output Quality - forensic soundness verification)
+Phase: 6 of 6 (Deployment & Gap Analysis) - In Progress
+Plan: 1 of 4 complete (06-03-PLAN.md)
+Status: Agent deployment tests with skip guards created (DEPLOY-02, DEPLOY-05, DEPLOY-06)
+Last activity: 2026-01-26 — Completed 06-03-PLAN.md (Agent Deployment Tests)
 
-Progress: [████████░░] 83% (5 of 6 phases complete)
+Progress: [████████░░] 86% (19 of 22 plans complete)
 
 ## Performance Metrics
 
@@ -175,6 +175,14 @@ Recent decisions affecting current work:
 - Placeholder baselines designed for live population and manual verification before commit
 - NIST CFTT compliance: <1% false positive rate validated via structural checks
 
+**From 06-03 execution (Agent Deployment Tests):**
+- Socket connect check for SSH availability (5s timeout on port 22)
+- WinRM detection requires full credentials (host + user + password)
+- Infrastructure detection tests always run to verify skip guards work
+- has_ssh_target() and has_winrm_target() functions for target availability
+- skip_no_ssh_target and skip_no_winrm_target decorators with actionable messages
+- TestInfrastructureDetection validates helpers even when no targets configured
+
 ### Pending Todos
 
 None yet.
@@ -188,9 +196,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed Phase 5 — Output Quality verification complete
+Stopped at: Completed 06-03-PLAN.md — Agent Deployment Tests with skip guards
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Plan Phase 6 - Deployment & Gap Analysis*
+*Next step: Continue Phase 6 execution (06-01, 06-02, 06-04 remaining)*
