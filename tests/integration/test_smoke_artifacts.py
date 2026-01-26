@@ -2,10 +2,13 @@
 
 Validates:
 - SMOKE-02: Generic.Client.Info artifact collection works against live container
-- SMOKE-03: Generic.System.Pslist returns valid process list structure
+- SMOKE-03: Process list artifact collection returns valid process list structure
 
 Unlike the parametrized MCP tool tests, these tests actually wait for
 artifact collections to complete and validate the returned data structure.
+
+Note: source() VQL function requires specific source names, not just artifact names.
+For example: source(artifact='Generic.Client.Info', source='BasicInformation')
 """
 
 import pytest
@@ -29,7 +32,7 @@ class TestArtifactCollectionSmoke:
         This test:
         1. Schedules Generic.Client.Info collection
         2. Waits for flow to complete
-        3. Validates returned metadata structure
+        3. Validates returned metadata structure from BasicInformation source
         """
         # Schedule artifact collection
         vql = f"""
@@ -68,19 +71,21 @@ class TestArtifactCollectionSmoke:
         except TimeoutError:
             pytest.fail("Generic.Client.Info collection did not complete in 30s")
 
-        # Get flow results
+        # Get flow results - use specific source name (BasicInformation)
+        # The source() function requires artifact + source, not just artifact name
         results_vql = f"""
         SELECT * FROM source(
             client_id='{enrolled_client_id}',
             flow_id='{flow_id}',
-            artifact='Generic.Client.Info'
+            artifact='Generic.Client.Info',
+            source='BasicInformation'
         )
         """
         results = velociraptor_client.query(results_vql)
 
         # Validate results structure
         with check:
-            assert len(results) > 0, "Generic.Client.Info returned no results"
+            assert len(results) > 0, "Generic.Client.Info/BasicInformation returned no results"
 
         if results:
             info = results[0]
@@ -89,7 +94,6 @@ class TestArtifactCollectionSmoke:
             # Field names may vary by Velociraptor version
             hostname_found = any(k in info for k in ["Hostname", "hostname", "Fqdn"])
             os_found = any(k in info for k in ["OS", "os", "System", "Platform"])
-            client_id_found = any(k in info for k in ["ClientId", "client_id", "Client"])
 
             with check:
                 assert hostname_found, \
@@ -107,22 +111,41 @@ class TestArtifactCollectionSmoke:
                 with check:
                     assert len(info[hostname_key]) > 0, "Hostname is empty"
 
-    def test_generic_system_pslist(self, velociraptor_client, enrolled_client_id):
-        """Smoke test: Generic.System.Pslist artifact collection.
+    def test_process_list_artifact(self, velociraptor_client, enrolled_client_id):
+        """Smoke test: Process list artifact collection.
 
-        Validates SMOKE-03: Generic.System.Pslist returns valid process list
+        Validates SMOKE-03: Process list artifact returns valid process list
         structure (PID, name, command line).
 
+        Note: Generic.System.Pslist does not exist in Velociraptor 0.75.x.
+        This test uses Linux.Sys.Pslist for Linux clients.
+        Phase 4 (OS-Specific) will properly handle Windows/macOS variants.
+
         This test:
-        1. Schedules Generic.System.Pslist collection
-        2. Waits for flow to complete
-        3. Validates returned process list structure
+        1. Determines correct artifact for target OS
+        2. Schedules process list collection
+        3. Waits for flow to complete
+        4. Validates returned process list structure
         """
+        # Determine which Pslist artifact to use based on available artifacts
+        # Generic.System.Pslist doesn't exist in Velociraptor 0.75.x
+        # Use Linux.Sys.Pslist for Linux clients
+        artifact_vql = """
+        SELECT name FROM artifact_definitions()
+        WHERE name = 'Linux.Sys.Pslist'
+        """
+        available = velociraptor_client.query(artifact_vql)
+
+        if not available:
+            pytest.skip("No Pslist artifact available for this OS")
+
+        artifact_name = "Linux.Sys.Pslist"
+
         # Schedule artifact collection
         vql = f"""
         SELECT collect_client(
             client_id='{enrolled_client_id}',
-            artifacts=['Generic.System.Pslist'],
+            artifacts=['{artifact_name}'],
             timeout=30
         ) AS collection
         FROM scope()
@@ -149,14 +172,14 @@ class TestArtifactCollectionSmoke:
                 timeout=30
             )
         except TimeoutError:
-            pytest.fail("Generic.System.Pslist collection did not complete in 30s")
+            pytest.fail(f"{artifact_name} collection did not complete in 30s")
 
-        # Get flow results
+        # Get flow results - Linux.Sys.Pslist doesn't have sub-sources
         results_vql = f"""
         SELECT * FROM source(
             client_id='{enrolled_client_id}',
             flow_id='{flow_id}',
-            artifact='Generic.System.Pslist'
+            artifact='{artifact_name}'
         )
         """
         results = velociraptor_client.query(results_vql)
@@ -183,12 +206,12 @@ class TestArtifactCollectionSmoke:
             with check:
                 assert name_found, \
                     f"Missing process name field. Available: {list(process.keys())}"
-            # Command line may be empty for some processes, so just check presence
+            # Command line is expected for Linux.Sys.Pslist
             with check:
-                assert cmdline_found or True, \
-                    f"Note: Command line field not found. Available: {list(process.keys())}"
+                assert cmdline_found, \
+                    f"Missing CommandLine field. Available: {list(process.keys())}"
 
-            # Validate PID is numeric
+            # Validate PID is numeric (may be string in VQL)
             pid_key = next((k for k in ["Pid", "PID", "pid"] if k in process), None)
             if pid_key:
                 with check:
@@ -202,7 +225,8 @@ class TestArtifactCollectionSmoke:
                     assert isinstance(process[name_key], str), \
                         f"Process name should be string, got {type(process[name_key])}"
 
-        # Verify we got multiple processes (healthy system has many)
+        # Note: Velociraptor client container runs minimal processes
+        # Don't assert many processes - even 1 is valid for smoke test
         with check:
-            assert len(results) > 5, \
-                f"Expected many processes, got only {len(results)}"
+            assert len(results) >= 1, \
+                f"Expected at least 1 process, got {len(results)}"
