@@ -102,10 +102,11 @@ Plans:
   4. TargetRegistry selects appropriate test targets based on OS and artifact capabilities
   5. Complex artifact types (registry, binary parsing) validate against OS-specific schemas
 
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 04-01-PLAN.md — Linux artifact testing (TargetRegistry enhancement, schemas, Linux.Sys.Users)
+- [ ] 04-02-PLAN.md — Windows artifact testing (Services, Registry.UserAssist with skip guards)
 
 ### Phase 5: Output Quality
 **Goal**: All artifact collections produce forensically sound output with verifiable correctness against known-good baselines
@@ -148,14 +149,14 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
 | 2. Smoke Tests | 6/6 | Complete | 2026-01-25 |
 | 3. Error Handling | 4/4 | Complete | 2026-01-26 |
-| 4. OS-Specific Artifacts | 0/TBD | Not started | - |
+| 4. OS-Specific Artifacts | 0/2 | Not started | - |
 | 5. Output Quality | 0/TBD | Not started | - |
 | 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
 
