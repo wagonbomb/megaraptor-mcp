@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 5 of 6 (Output Quality) - In Progress
-Plan: 1 of 5 complete (05-01-PLAN.md)
-Status: Baseline infrastructure complete — foundation for QUAL-01, QUAL-04, QUAL-05 tests
-Last activity: 2026-01-26 — Completed 05-01-PLAN.md (baseline fixtures and helper functions)
+Plan: 2 of 5 complete (05-02-PLAN.md)
+Status: Hash and timestamp validation tests complete — QUAL-01 and QUAL-02 requirements satisfied
+Last activity: 2026-01-26 — Completed 05-02-PLAN.md (hash validation and timestamp accuracy tests)
 
-Progress: [████████░░] 67% (4 of 6 phases complete, 1 of 5 plans in phase 5)
+Progress: [████████░░] 68% (4 of 6 phases complete, 2 of 5 plans in phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 5.5 min
+- Total plans completed: 17
+- Average duration: 5.3 min
 - Total execution time: 1.5 hours
 
 **By Phase:**
@@ -31,10 +31,10 @@ Progress: [████████░░] 67% (4 of 6 phases complete, 1 of 5 p
 | 02-smoke-tests | 6 | 30min | 5.0min |
 | 03-error-handling | 4 | 33min | 8.3min |
 | 04-os-specific-artifacts | 2 | 18min | 9.0min |
-| 05-output-quality | 1 | 3min | 3.0min |
+| 05-output-quality | 2 | 6min | 3.0min |
 
 **Recent Trend:**
-- Last 5 plans: 5min, 15min, 10min, 8min, 3min
+- Last 5 plans: 15min, 10min, 8min, 3min, 3min
 - Trend: Fast infrastructure plans (3min), comprehensive testing plans (8-15min)
 
 *Updated after each plan completion*
@@ -151,6 +151,14 @@ Recent decisions affecting current work:
 - Baseline metadata tracks SHA-256 hash, test conditions, critical fields
 - Artifact name to filename conversion (Linux.Sys.Users -> linux_sys_users.json)
 
+**From 05-02 execution (Hash and Timestamp Validation Tests):**
+- Use pytest.approx(abs=2.0) for timestamp drift validation - allows for network latency and query execution time
+- Skip test gracefully when baseline hash not populated - enables incremental baseline population
+- Multi-format timestamp parsing (RFC3339, ISO8601, Unix epoch) via parse_velociraptor_timestamp()
+- Unit tests validate helpers without live server - fast feedback loop
+- Hash validation pattern: compute hash, compare to metadata, skip with hash if not populated
+- Timestamp accuracy via pytest.approx - record before/after time, validate flow timestamp within tolerance
+
 ### Pending Todos
 
 None yet.
@@ -163,10 +171,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T19:46:58Z
-Stopped at: Completed 05-01-PLAN.md — Baseline infrastructure complete
+Last session: 2026-01-26T19:52:33Z
+Stopped at: Completed 05-02-PLAN.md — Hash and timestamp validation tests complete
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Continue Phase 5 - Hash validation tests (05-02)*
+*Next step: Continue Phase 5 - VQL correctness tests (05-03)*
