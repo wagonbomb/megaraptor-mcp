@@ -4,6 +4,7 @@ Hunt tools for Velociraptor MCP.
 Provides tools for creating and managing Velociraptor hunts (mass collection campaigns).
 """
 
+import grpc
 import json
 from typing import Any, Optional
 
@@ -11,6 +12,11 @@ from mcp.types import TextContent
 
 from ..server import mcp
 from ..client import get_client
+from ..error_handling import (
+    validate_hunt_id,
+    validate_limit,
+    map_grpc_error,
+)
 
 
 @mcp.tool()
@@ -41,59 +47,99 @@ async def create_hunt(
     Returns:
         Hunt ID and details.
     """
-    client = get_client()
-
-    # Build the artifacts list
-    artifacts_str = ", ".join(f"'{a}'" for a in artifacts)
-
-    # Build optional parameters
-    parts = [
-        f"artifacts=[{artifacts_str}]",
-        f"description='{description}'",
-        f"timeout={timeout}",
-        f"expires=now() + {expires_hours * 3600}",
-        f"pause={'true' if paused else 'false'}",
-    ]
-
-    if parameters:
-        spec_json = json.dumps(parameters).replace("'", "\\'")
-        parts.append(f"spec={spec_json}")
-
-    if include_labels:
-        labels_str = ", ".join(f"'{l}'" for l in include_labels)
-        parts.append(f"include_labels=[{labels_str}]")
-
-    if exclude_labels:
-        labels_str = ", ".join(f"'{l}'" for l in exclude_labels)
-        parts.append(f"exclude_labels=[{labels_str}]")
-
-    if os_filter:
-        parts.append(f"os='{os_filter}'")
-
-    params_str = ", ".join(parts)
-    vql = f"SELECT hunt({params_str}) AS hunt FROM scope()"
-
-    results = client.query(vql)
-
-    if not results:
+    # Input validation
+    if not artifacts:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": "Failed to create hunt"})
+            text=json.dumps({
+                "error": "artifacts parameter is required and cannot be empty"
+            })
         )]
 
-    hunt = results[0].get("hunt", {})
+    if not description:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "description parameter is required and cannot be empty"
+            })
+        )]
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "status": "hunt_created",
-            "hunt_id": hunt.get("hunt_id", ""),
-            "description": description,
-            "artifacts": artifacts,
-            "state": "PAUSED" if paused else "RUNNING",
-            "expires": hunt.get("expires", ""),
-        }, indent=2, default=str)
-    )]
+    if os_filter and os_filter not in ['windows', 'linux', 'darwin']:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Invalid os_filter '{os_filter}'. Must be one of: windows, linux, darwin"
+            })
+        )]
+
+    try:
+        client = get_client()
+
+        # Build the artifacts list
+        artifacts_str = ", ".join(f"'{a}'" for a in artifacts)
+
+        # Build optional parameters
+        parts = [
+            f"artifacts=[{artifacts_str}]",
+            f"description='{description}'",
+            f"timeout={timeout}",
+            f"expires=now() + {expires_hours * 3600}",
+            f"pause={'true' if paused else 'false'}",
+        ]
+
+        if parameters:
+            spec_json = json.dumps(parameters).replace("'", "\\'")
+            parts.append(f"spec={spec_json}")
+
+        if include_labels:
+            labels_str = ", ".join(f"'{l}'" for l in include_labels)
+            parts.append(f"include_labels=[{labels_str}]")
+
+        if exclude_labels:
+            labels_str = ", ".join(f"'{l}'" for l in exclude_labels)
+            parts.append(f"exclude_labels=[{labels_str}]")
+
+        if os_filter:
+            parts.append(f"os='{os_filter}'")
+
+        params_str = ", ".join(parts)
+        vql = f"SELECT hunt({params_str}) AS hunt FROM scope()"
+
+        results = client.query(vql)
+
+        if not results:
+            return [TextContent(
+                type="text",
+                text=json.dumps({"error": "Failed to create hunt"})
+            )]
+
+        hunt = results[0].get("hunt", {})
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "status": "hunt_created",
+                "hunt_id": hunt.get("hunt_id", ""),
+                "description": description,
+                "artifacts": artifacts,
+                "state": "PAUSED" if paused else "RUNNING",
+                "expires": hunt.get("expires", ""),
+            }, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, "hunt creation")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error during hunt creation: {str(e)}"
+            })
+        )]
 
 
 @mcp.tool()
@@ -110,38 +156,69 @@ async def list_hunts(
     Returns:
         List of hunts with their status and statistics.
     """
-    client = get_client()
+    # Input validation
+    limit_validation = validate_limit(limit)
+    if limit_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(limit_validation)
+        )]
 
-    vql = f"SELECT * FROM hunts() LIMIT {limit}"
-    results = client.query(vql)
+    if state and state.upper() not in ['RUNNING', 'PAUSED', 'STOPPED', 'COMPLETED']:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Invalid state '{state}'. Must be one of: RUNNING, PAUSED, STOPPED, COMPLETED"
+            })
+        )]
 
-    # Filter by state if specified
-    if state:
-        results = [r for r in results if r.get("state", "").upper() == state.upper()]
+    try:
+        client = get_client()
 
-    # Format the results
-    formatted = []
-    for row in results:
-        hunt = {
-            "hunt_id": row.get("hunt_id", ""),
-            "description": row.get("hunt_description", ""),
-            "state": row.get("state", ""),
-            "artifacts": row.get("artifacts", []),
-            "created_time": row.get("create_time", ""),
-            "start_time": row.get("start_time", ""),
-            "stats": {
-                "total_clients_scheduled": row.get("stats", {}).get("total_clients_scheduled", 0),
-                "total_clients_with_results": row.get("stats", {}).get("total_clients_with_results", 0),
-                "total_clients_with_errors": row.get("stats", {}).get("total_clients_with_errors", 0),
-            },
-            "creator": row.get("creator", ""),
-        }
-        formatted.append(hunt)
+        vql = f"SELECT * FROM hunts() LIMIT {limit}"
+        results = client.query(vql)
 
-    return [TextContent(
-        type="text",
-        text=json.dumps(formatted, indent=2, default=str)
-    )]
+        # Filter by state if specified
+        if state:
+            results = [r for r in results if r.get("state", "").upper() == state.upper()]
+
+        # Format the results
+        formatted = []
+        for row in results:
+            hunt = {
+                "hunt_id": row.get("hunt_id", ""),
+                "description": row.get("hunt_description", ""),
+                "state": row.get("state", ""),
+                "artifacts": row.get("artifacts", []),
+                "created_time": row.get("create_time", ""),
+                "start_time": row.get("start_time", ""),
+                "stats": {
+                    "total_clients_scheduled": row.get("stats", {}).get("total_clients_scheduled", 0),
+                    "total_clients_with_results": row.get("stats", {}).get("total_clients_with_results", 0),
+                    "total_clients_with_errors": row.get("stats", {}).get("total_clients_with_errors", 0),
+                },
+                "creator": row.get("creator", ""),
+            }
+            formatted.append(hunt)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(formatted, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, "hunt listing")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error listing hunts: {str(e)}"
+            })
+        )]
 
 
 @mcp.tool()
@@ -160,25 +237,58 @@ async def get_hunt_results(
     Returns:
         Hunt results data from all clients.
     """
-    client = get_client()
+    # Input validation
+    hunt_id_validation = validate_hunt_id(hunt_id)
+    if hunt_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(hunt_id_validation)
+        )]
 
-    # Build the VQL query
-    if artifact:
-        vql = f"SELECT * FROM hunt_results(hunt_id='{hunt_id}', artifact='{artifact}') LIMIT {limit}"
-    else:
-        vql = f"SELECT * FROM hunt_results(hunt_id='{hunt_id}') LIMIT {limit}"
+    limit_validation = validate_limit(limit)
+    if limit_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(limit_validation)
+        )]
 
-    results = client.query(vql)
+    try:
+        client = get_client()
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "hunt_id": hunt_id,
-            "artifact": artifact,
-            "result_count": len(results),
-            "results": results[:limit],
-        }, indent=2, default=str)
-    )]
+        # Build the VQL query
+        if artifact:
+            vql = f"SELECT * FROM hunt_results(hunt_id='{hunt_id}', artifact='{artifact}') LIMIT {limit}"
+        else:
+            vql = f"SELECT * FROM hunt_results(hunt_id='{hunt_id}') LIMIT {limit}"
+
+        results = client.query(vql)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "hunt_id": hunt_id,
+                "artifact": artifact,
+                "result_count": len(results),
+                "results": results[:limit],
+            }, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"hunt results for {hunt_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Hunt {hunt_id} may not exist. Use list_hunts() to see available hunts."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error getting hunt results: {str(e)}"
+            })
+        )]
 
 
 @mcp.tool()
@@ -195,7 +305,13 @@ async def modify_hunt(
     Returns:
         Updated hunt status.
     """
-    client = get_client()
+    # Input validation
+    hunt_id_validation = validate_hunt_id(hunt_id)
+    if hunt_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(hunt_id_validation)
+        )]
 
     action_map = {
         "start": "StartHuntRequest",
@@ -212,24 +328,44 @@ async def modify_hunt(
             })
         )]
 
-    # Use the hunt() function to modify the hunt
-    if action == "start":
-        vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='RUNNING') FROM scope()"
-    elif action == "pause":
-        vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='PAUSED') FROM scope()"
-    elif action == "stop":
-        vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='STOPPED') FROM scope()"
-    else:  # archive
-        vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='ARCHIVED') FROM scope()"
+    try:
+        client = get_client()
 
-    results = client.query(vql)
+        # Use the hunt() function to modify the hunt
+        if action == "start":
+            vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='RUNNING') FROM scope()"
+        elif action == "pause":
+            vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='PAUSED') FROM scope()"
+        elif action == "stop":
+            vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='STOPPED') FROM scope()"
+        else:  # archive
+            vql = f"SELECT hunt_update(hunt_id='{hunt_id}', state='ARCHIVED') FROM scope()"
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "hunt_id": hunt_id,
-            "action": action,
-            "status": "success",
-            "result": results[0] if results else None,
-        }, indent=2, default=str)
-    )]
+        results = client.query(vql)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "hunt_id": hunt_id,
+                "action": action,
+                "status": "success",
+                "result": results[0] if results else None,
+            }, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"modifying hunt {hunt_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Hunt {hunt_id} may not exist. Use list_hunts() to see available hunts."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error modifying hunt: {str(e)}"
+            })
+        )]
