@@ -4,6 +4,7 @@ VQL query tool for Velociraptor MCP.
 Provides a tool for executing arbitrary VQL (Velociraptor Query Language) queries.
 """
 
+import grpc
 import json
 from typing import Any, Optional
 
@@ -11,6 +12,12 @@ from mcp.types import TextContent
 
 from ..server import mcp
 from ..client import get_client
+from ..error_handling import (
+    validate_vql_syntax_basics,
+    validate_limit,
+    map_grpc_error,
+    extract_vql_error_hint,
+)
 
 
 @mcp.tool()
@@ -41,7 +48,29 @@ async def run_vql(
     Returns:
         Query results as JSON.
     """
-    client = get_client()
+    # Input validation
+    if not query or not query.strip():
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "query parameter is required and cannot be empty"
+            })
+        )]
+
+    limit_validation = validate_limit(max_rows)
+    if limit_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(limit_validation)
+        )]
+
+    # Pre-execution syntax validation
+    syntax_validation = validate_vql_syntax_basics(query)
+    if syntax_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(syntax_validation)
+        )]
 
     # Add LIMIT if not already present and query doesn't have one
     query_upper = query.upper()
@@ -49,6 +78,7 @@ async def run_vql(
         query = f"{query.rstrip(';')} LIMIT {max_rows}"
 
     try:
+        client = get_client()
         results = client.query(query, env=env, org_id=org_id)
 
         return [TextContent(
@@ -59,11 +89,28 @@ async def run_vql(
                 "results": results,
             }, indent=2, default=str)
         )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, "VQL query execution")
+
+        # For INVALID_ARGUMENT errors, try to extract VQL-specific hints
+        if error_response.get("grpc_status") == "INVALID_ARGUMENT":
+            error_message = str(e)
+            vql_hint = extract_vql_error_hint(error_message)
+            if vql_hint:
+                error_response["vql_hint"] = vql_hint
+
+        error_response["query"] = query
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+
     except Exception as e:
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": str(e),
+                "error": f"Unexpected error executing VQL query: {str(e)}",
                 "query": query,
             })
         )]
