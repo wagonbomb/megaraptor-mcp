@@ -13,6 +13,11 @@ from .cleanup_helpers import (
 from .target_registry import TargetRegistry, TestTarget
 from .cert_monitor import check_cert_expiration
 from .mcp_helpers import invoke_mcp_tool, parse_tool_response, replace_placeholders
+from .deployment_helpers import (
+    wait_for_deployment_healthy,
+    verify_deployment_accessible,
+    verify_container_removed,
+)
 
 __all__ = [
     # Wait helpers
@@ -32,4 +37,8 @@ __all__ = [
     "invoke_mcp_tool",
     "parse_tool_response",
     "replace_placeholders",
+    # Deployment helpers
+    "wait_for_deployment_healthy",
+    "verify_deployment_accessible",
+    "verify_container_removed",
 ]
