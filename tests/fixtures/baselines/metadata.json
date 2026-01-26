@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "created": "2026-01-26",
+  "description": "Known-good baselines for forensic validation testing",
+  "baselines": {
+    "Linux.Sys.Users": {
+      "filename": "linux_sys_users.json",
+      "sha256": null,
+      "created": "2026-01-26",
+      "test_conditions": {
+        "os": "Ubuntu 22.04 Docker container",
+        "velociraptor_version": "0.75.x",
+        "collection_method": "collect_client with Linux.Sys.Users artifact"
+      },
+      "critical_fields": ["User", "Uid", "Gid"],
+      "notes": "Initial baseline - hash to be populated after first collection"
+    },
+    "Generic.Client.Info": {
+      "filename": "generic_client_info.json",
+      "sha256": null,
+      "created": "2026-01-26",
+      "test_conditions": {
+        "os": "Any (cross-platform artifact)",
+        "velociraptor_version": "0.75.x",
+        "collection_method": "collect_client with Generic.Client.Info artifact"
+      },
+      "critical_fields": ["Hostname", "OS"],
+      "notes": "Initial baseline - hash to be populated after first collection"
+    }
+  }
+}
