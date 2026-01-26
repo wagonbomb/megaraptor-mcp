@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** All 35 MCP tools work reliably against real Velociraptor deployments with actionable output and graceful error handling
-**Current focus:** Phase 2 - Smoke Tests (Gap Closure)
+**Current focus:** Phase 3 - Error Handling
 
 ## Current Position
 
-Phase: 2 of 6 (Smoke Tests) - Gap Closure Complete
-Plan: 6 of 6 complete (02-06-PLAN.md)
-Status: Phase 2 complete (all gaps closed)
-Last activity: 2026-01-25 — Completed 02-06-PLAN.md (Artifact Collection Fixes)
+Phase: 3 of 6 (Error Handling) - In Progress
+Plan: 1 of 1 complete (03-01-PLAN.md)
+Status: Phase 3 complete (error handling foundation established)
+Last activity: 2026-01-26 — Completed 03-01-PLAN.md (Error Handling Foundation)
 
-Progress: [███░░░░░░░] 33% (2 of 6 phases complete)
+Progress: [█████░░░░░] 50% (3 of 6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 4.0 min
-- Total execution time: 0.6 hours
+- Total plans completed: 10
+- Average duration: 4.2 min
+- Total execution time: 0.7 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [███░░░░░░░] 33% (2 of 6 phases complete)
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
 | 02-smoke-tests | 6 | 30min | 5.0min |
+| 03-error-handling | 1 | 8min | 8.0min |
 
 **Recent Trend:**
-- Last 5 plans: 3min, 4min, 4min, 12min, 8min
-- Trend: Gap closure plans taking longer due to diagnostic work
+- Last 5 plans: 4min, 4min, 12min, 8min, 8min
+- Trend: Stable at 8min for complex implementation plans
 
 *Updated after each plan completion*
 
@@ -95,6 +96,15 @@ Recent decisions affecting current work:
 - Inject VELOCIRAPTOR_CONFIG_PATH env var via autouse fixture for MCP tool tests
 - Deployment tools expected to fail gracefully with "Deployment not found" errors
 
+**From 03-01 execution (Error Handling Foundation):**
+- Tenacity library for retry logic - well-maintained, flexible decorator-based retry library
+- Selective retry strategy - only retry transient errors (UNAVAILABLE, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED)
+- No retry on validation, auth, or not-found errors that require user intervention
+- 30-second default timeout for query operations - balances responsiveness and completion
+- Exponential backoff with 1s min, 10s max, 3 attempts - prevents thundering herd
+- Pattern-based VQL hints via regex - actionable guidance without server API dependency
+- Structured error format - dicts with error/hint/grpc_status fields for consistent consumption
+
 ### Pending Todos
 
 None yet.
@@ -107,10 +117,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T11:10:00Z
-Stopped at: Completed 02-06-PLAN.md (Gap Closure - Artifact Collection Fixes)
+Last session: 2026-01-26T03:03:05Z
+Stopped at: Completed 03-01-PLAN.md (Error Handling Foundation)
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: /gsd:plan-phase 03 (Phase 2 fully complete, all 75 smoke tests passing)*
+*Next step: /gsd:plan-phase 04 (Phase 3 complete, error handling foundation established)*
