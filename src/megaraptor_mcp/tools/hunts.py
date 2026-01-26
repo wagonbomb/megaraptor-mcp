@@ -133,11 +133,13 @@ async def create_hunt(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+    except Exception:
+        # Generic errors - don't expose internals
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error during hunt creation: {str(e)}"
+                "error": "Unexpected error during hunt creation",
+                "hint": "Check Velociraptor server logs or contact administrator"
             })
         )]
 
