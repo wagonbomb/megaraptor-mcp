@@ -32,6 +32,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: Requires Docker infrastructure")
     config.addinivalue_line("markers", "slow: Long-running tests")
     config.addinivalue_line("markers", "smoke: Smoke tests (quick validation)")
+    config.addinivalue_line("markers", "windows: Requires Windows target")
 
 
 def has_docker() -> bool:
@@ -66,6 +67,17 @@ def is_velociraptor_running() -> bool:
         return False
 
 
+def has_windows_target() -> bool:
+    """Check if Windows target is available in test environment.
+
+    Returns:
+        True if Windows target exists and is enrolled, False otherwise
+    """
+    # TODO: Implement when Windows target becomes available
+    # For now, always return False as we only have Linux container
+    return False
+
+
 # Skip decorators for conditional test execution
 skip_no_docker = pytest.mark.skipif(
     not has_docker(),
@@ -75,6 +87,11 @@ skip_no_docker = pytest.mark.skipif(
 skip_no_configs = pytest.mark.skipif(
     not has_velociraptor_configs(),
     reason="Velociraptor configs not generated. Run: ./scripts/test-lab.sh generate-config"
+)
+
+skip_no_windows_target = pytest.mark.skipif(
+    not has_windows_target(),
+    reason="No Windows target available"
 )
 
 
