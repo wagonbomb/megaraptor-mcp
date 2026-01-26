@@ -141,3 +141,200 @@ Based on the workflow assessment, the following gaps are prioritized for future 
 | Change tracking | Audit trail missing | Requires architecture decision |
 | Process termination | Manual VQL | Security considerations for remote exec |
 
+## Deployment Improvement Recommendations
+
+Based on validation testing in Phase 6 and analysis of the deployment automation implementation, the following improvements are recommended for future development.
+
+### Priority 1: Critical Improvements
+
+These improvements address issues that impact reliability and user experience in production deployments.
+
+#### 1.1 Health Check Timeout Configuration
+
+**Issue:** Default health check timeout (120s) may be insufficient for slow networks or resource-constrained environments.
+
+**Current Behavior:** Health check uses hardcoded timeout value that cannot be adjusted per-environment.
+
+**Recommendation:** Make timeout configurable via environment variable (`MEGARAPTOR_HEALTH_TIMEOUT`) with sensible default.
+
+**Rationale:** Different deployment environments have different latency characteristics. Incident response scenarios may involve degraded networks or overloaded systems where 120s is insufficient.
+
+**Implementation Effort:** Low (configuration change)
+
+#### 1.2 Certificate Validation Error Messages
+
+**Issue:** Self-signed certificate errors produce generic SSL/TLS error messages that don't guide users to resolution.
+
+**Current Behavior:** gRPC connection fails with `ssl.SSLCertVerificationError` without actionable guidance.
+
+**Recommendation:** Add explicit self-signed certificate detection with user-friendly message: "Self-signed certificate detected. Use `--insecure` flag or add certificate to trusted store."
+
+**Rationale:** Most incident response deployments use self-signed certificates for rapid deployment. Users need clear guidance on how to proceed.
+
+**Implementation Effort:** Low (error message enhancement)
+
+#### 1.3 Deployment State Persistence
+
+**Issue:** Deployment registry is stored in memory only; state is lost on tool restart.
+
+**Current Behavior:** After restart, users must re-register deployments manually or re-run deployment commands.
+
+**Recommendation:** Persist deployment registry to disk (JSON file in `~/.megaraptor/deployments.json`) with automatic load on startup.
+
+**Rationale:** Users expect to reconnect to existing deployments after tool restart. Losing state causes confusion and requires redundant operations.
+
+**Implementation Effort:** Medium (file I/O, migration handling)
+
+#### 1.4 Connection Retry on Transient Failures
+
+**Issue:** Initial connection failures are not retried, requiring manual intervention.
+
+**Current Behavior:** First connection attempt fails immediately on transient network errors.
+
+**Recommendation:** Apply existing tenacity retry logic to initial deployment connections, not just query operations.
+
+**Rationale:** Transient network issues are common in incident response environments. Automatic retry improves reliability without user intervention.
+
+**Implementation Effort:** Low (extend existing retry decorator)
+
+### Priority 2: Enhancement Recommendations
+
+These improvements enhance usability and operational flexibility.
+
+#### 2.1 Minimal Deployment Profile
+
+**Issue:** Only three profiles available (rapid, standard, enterprise); no option for resource-constrained environments.
+
+**Current Behavior:** "Rapid" profile is smallest option but may still exceed available resources in some scenarios.
+
+**Recommendation:** Add "minimal" profile optimized for single-investigator, low-resource scenarios:
+- Reduced memory limits (512MB vs 2GB)
+- Single frontend only
+- Disabled non-essential services
+- Faster startup time
+
+**Rationale:** Some IR scenarios (embedded systems, IoT investigation) require minimal footprint. Current profiles assume adequate resources.
+
+**Implementation Effort:** Medium (new profile definition, testing)
+
+#### 2.2 Container Image Version Pinning
+
+**Issue:** Latest tag used by default, leading to inconsistent deployments over time.
+
+**Current Behavior:** `deploy_server_docker` pulls `velociraptor:latest` unless version specified.
+
+**Recommendation:** Default to specific known-good version (e.g., `0.75.2`) with explicit `--latest` flag for newest version.
+
+**Rationale:** Version consistency is critical for reproducible investigations and cross-deployment comparison. Latest tag introduces variability.
+
+**Implementation Effort:** Low (configuration change)
+
+#### 2.3 Network Isolation Options for Docker
+
+**Issue:** No built-in network isolation for deployed Velociraptor servers.
+
+**Current Behavior:** Docker containers use default bridge network, potentially accessible to other containers.
+
+**Recommendation:** Add `--network-isolated` flag to create dedicated Docker network per deployment with configurable firewall rules.
+
+**Rationale:** Security best practice for incident response. Isolated deployment prevents lateral movement if server compromised.
+
+**Implementation Effort:** Medium (Docker network configuration)
+
+#### 2.4 Deployment Tagging and Metadata
+
+**Issue:** Deployments have minimal metadata, making it difficult to distinguish between multiple deployments.
+
+**Current Behavior:** Deployments identified only by auto-generated ID.
+
+**Recommendation:** Allow user-provided tags, descriptions, and investigation case numbers when creating deployments.
+
+**Rationale:** Incident responders often manage multiple simultaneous deployments. Rich metadata improves organization and auditability.
+
+**Implementation Effort:** Low (extend deployment data model)
+
+#### 2.5 Pre-Deployment Validation Checks
+
+**Issue:** Deployment failures occur after resources are partially provisioned.
+
+**Current Behavior:** Port conflicts, missing dependencies discovered during deployment.
+
+**Recommendation:** Add `--validate-only` mode that checks prerequisites before deployment:
+- Port availability
+- Docker/SSH connectivity
+- Disk space requirements
+- Network accessibility
+
+**Rationale:** Catching issues early prevents partial deployments and simplifies troubleshooting.
+
+**Implementation Effort:** Medium (validation framework)
+
+### Priority 3: Future Considerations
+
+These are architectural enhancements for future milestones.
+
+#### 3.1 Multi-Server Deployments
+
+**Issue:** Single server deployment only; no support for distributed architectures.
+
+**Current Behavior:** Each deployment is a single Velociraptor server instance.
+
+**Recommendation:** Add multi-frontend support for enterprise scale:
+- Load balancer configuration
+- Shared datastore
+- Frontend auto-scaling
+
+**Rationale:** Large enterprises require scalable deployments that handle thousands of endpoints. Current architecture limits scale.
+
+**Implementation Effort:** High (architectural change)
+
+#### 3.2 Kubernetes Deployment Support
+
+**Issue:** Docker only; no Kubernetes support for cloud-native environments.
+
+**Current Behavior:** Deployment limited to Docker containers and binary installations.
+
+**Recommendation:** Add Helm chart or Kubernetes manifest generation:
+- StatefulSet for server
+- ConfigMap for configuration
+- Secret management for certificates
+- Ingress configuration
+
+**Rationale:** Enterprise environments increasingly use Kubernetes. Native support reduces deployment friction.
+
+**Implementation Effort:** High (new deployment path)
+
+#### 3.3 Deployment Templates and Presets
+
+**Issue:** Deployment configuration requires manual parameter specification each time.
+
+**Current Behavior:** Users must provide configuration options for each deployment.
+
+**Recommendation:** Support deployment templates that capture common configurations:
+- Save current deployment as template
+- Apply template to new deployments
+- Organization-wide template sharing
+
+**Rationale:** Standardized deployments reduce configuration errors and ensure consistency across an organization's IR capability.
+
+**Implementation Effort:** Medium (template system)
+
+### Deployment Recommendations Summary
+
+| Priority | ID | Recommendation | Effort | Impact |
+|----------|-----|----------------|--------|--------|
+| 1 | 1.1 | Health check timeout config | Low | High |
+| 1 | 1.2 | Certificate error messages | Low | High |
+| 1 | 1.3 | Deployment state persistence | Medium | High |
+| 1 | 1.4 | Connection retry | Low | Medium |
+| 2 | 2.1 | Minimal profile | Medium | Medium |
+| 2 | 2.2 | Version pinning | Low | Medium |
+| 2 | 2.3 | Network isolation | Medium | Medium |
+| 2 | 2.4 | Deployment tagging | Low | Low |
+| 2 | 2.5 | Pre-deployment validation | Medium | Medium |
+| 3 | 3.1 | Multi-server deployments | High | High |
+| 3 | 3.2 | Kubernetes support | High | High |
+| 3 | 3.3 | Deployment templates | Medium | Medium |
+
+**Recommended v2 Focus:** Priority 1 items (1.1-1.4) should be addressed first as they have highest impact with lowest effort. Priority 2 items can be prioritized based on user feedback.
+
