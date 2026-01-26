@@ -62,46 +62,55 @@ class TestInvestigationWorkflowE2E:
 
         try:
             # ================================================================
-            # Phase 1: TRIAGE - Quick process enumeration via VQL
+            # Phase 1: TRIAGE - Quick client assessment via VQL
             # ================================================================
             logger.info("=== PHASE 1: TRIAGE ===")
             logger.info(f"Target client: {enrolled_client_id}")
 
-            # Execute triage VQL query - get process list
-            # pslist() is a client-side artifact, needs collect_client first
-            # For quick triage, we use server-side VQL that runs on the client
+            # For triage, query the clients() table for quick assessment
+            # This is server-side VQL that provides immediate client metadata
+            # Note: pslist() is a client-side plugin that requires artifact collection
+            # Real DFIR triage starts with client info before detailed collection
             triage_vql = f"""
-            SELECT Pid, Name, Exe, Cmdline
-            FROM pslist(client_id='{enrolled_client_id}')
+            SELECT client_id, os_info, agent_information, last_seen_at
+            FROM clients(client_id='{enrolled_client_id}')
             """
 
             triage_results = velociraptor_client.query(triage_vql)
 
             # Validate triage results
             assert triage_results is not None, "Triage query returned None"
-            assert len(triage_results) > 0, "Triage query returned no processes"
+            assert len(triage_results) > 0, "Triage query returned no client info"
 
-            # Verify expected fields in process data
-            first_process = triage_results[0]
-            pid_found = any(k in first_process for k in ["Pid", "PID", "pid"])
-            name_found = any(k in first_process for k in ["Name", "name", "Exe", "exe"])
+            # Verify expected fields in triage data
+            triage_data = triage_results[0]
+            client_id_found = "client_id" in triage_data
+            os_found = "os_info" in triage_data or any(
+                k in triage_data for k in ["system", "platform", "OS"]
+            )
 
-            assert pid_found, f"Triage: Missing PID field. Available: {list(first_process.keys())}"
-            assert name_found, f"Triage: Missing Name field. Available: {list(first_process.keys())}"
+            assert client_id_found, f"Triage: Missing client_id. Available: {list(triage_data.keys())}"
+            assert os_found, f"Triage: Missing os_info field. Available: {list(triage_data.keys())}"
 
-            logger.info(f"TRIAGE COMPLETE: Found {len(triage_results)} processes")
-            logger.info(f"Sample process: {first_process}")
+            # Extract OS info for logging
+            os_info = triage_data.get("os_info", {})
+            os_name = os_info.get("system", "Unknown") if isinstance(os_info, dict) else "Unknown"
+
+            logger.info(f"TRIAGE COMPLETE: Client {enrolled_client_id}")
+            logger.info(f"OS: {os_name}, Agent: {triage_data.get('agent_information', {})}")
 
             # ================================================================
             # Phase 2: COLLECT - Schedule artifact collection
             # ================================================================
             logger.info("=== PHASE 2: COLLECT ===")
 
-            # Use Generic.Client.Info - quick, always available
+            # Collect both client info AND process list for comprehensive investigation
+            # - Generic.Client.Info: System metadata
+            # - Linux.Sys.Pslist: Process list (satisfies DEPLOY-03 process list requirement)
             collect_vql = f"""
             SELECT collect_client(
                 client_id='{enrolled_client_id}',
-                artifacts=['Generic.Client.Info'],
+                artifacts=['Generic.Client.Info', 'Linux.Sys.Pslist'],
                 timeout=60
             ) AS collection
             FROM scope()
@@ -118,6 +127,7 @@ class TestInvestigationWorkflowE2E:
 
             flow_id = collection["flow_id"]
             logger.info(f"Collection scheduled: flow_id={flow_id}")
+            logger.info("Artifacts: Generic.Client.Info, Linux.Sys.Pslist")
 
             # Wait for flow completion
             logger.info("Waiting for artifact collection to complete...")
@@ -140,8 +150,9 @@ class TestInvestigationWorkflowE2E:
             # ================================================================
             logger.info("=== PHASE 3: ANALYZE ===")
 
-            # Get flow results - use specific source for Generic.Client.Info
-            analyze_vql = f"""
+            # 3a. Analyze client info results
+            logger.info("Analyzing Generic.Client.Info results...")
+            client_info_vql = f"""
             SELECT * FROM source(
                 client_id='{enrolled_client_id}',
                 flow_id='{flow_id}',
@@ -150,14 +161,14 @@ class TestInvestigationWorkflowE2E:
             )
             """
 
-            analyze_results = velociraptor_client.query(analyze_vql)
+            client_info_results = velociraptor_client.query(client_info_vql)
 
-            # Validate analysis results
-            assert analyze_results is not None, "Analysis query returned None"
-            assert len(analyze_results) > 0, "Analysis query returned no results"
+            # Validate client info results
+            assert client_info_results is not None, "Client info query returned None"
+            assert len(client_info_results) > 0, "Client info query returned no results"
 
             # Validate expected client info fields
-            client_info = analyze_results[0]
+            client_info = client_info_results[0]
 
             # Check for critical fields (field names vary by version)
             hostname_found = any(k in client_info for k in ["Hostname", "hostname", "Fqdn", "fqdn"])
@@ -166,22 +177,48 @@ class TestInvestigationWorkflowE2E:
             assert hostname_found, f"ANALYZE: Missing hostname field. Available: {list(client_info.keys())}"
             assert os_found, f"ANALYZE: Missing OS field. Available: {list(client_info.keys())}"
 
-            # Log analysis summary
-            logger.info(f"ANALYZE COMPLETE: Retrieved {len(analyze_results)} result(s)")
-            logger.info(f"Client info fields: {list(client_info.keys())}")
-
-            # Get hostname value for summary
             hostname_key = next((k for k in ["Hostname", "hostname", "Fqdn", "fqdn"] if k in client_info), None)
-            if hostname_key:
-                logger.info(f"Hostname: {client_info[hostname_key]}")
+            logger.info(f"Client hostname: {client_info.get(hostname_key, 'N/A')}")
+
+            # 3b. Analyze process list results (DEPLOY-03: process list requirement)
+            logger.info("Analyzing Linux.Sys.Pslist results...")
+            pslist_vql = f"""
+            SELECT * FROM source(
+                client_id='{enrolled_client_id}',
+                flow_id='{flow_id}',
+                artifact='Linux.Sys.Pslist'
+            )
+            """
+
+            pslist_results = velociraptor_client.query(pslist_vql)
+
+            # Validate process list results
+            assert pslist_results is not None, "Process list query returned None"
+            assert len(pslist_results) > 0, "Process list query returned no processes"
+
+            # Validate expected process fields (Pid, Name, CommandLine)
+            first_process = pslist_results[0]
+            pid_found = any(k in first_process for k in ["Pid", "PID", "pid"])
+            name_found = any(k in first_process for k in ["Name", "name", "Exe", "exe"])
+            cmdline_found = any(k in first_process for k in [
+                "CommandLine", "command_line", "Cmdline", "cmdline", "Commandline"
+            ])
+
+            assert pid_found, f"ANALYZE: Missing PID field. Available: {list(first_process.keys())}"
+            assert name_found, f"ANALYZE: Missing Name field. Available: {list(first_process.keys())}"
+            # CommandLine may be empty for some processes, but field should exist
+            assert cmdline_found, f"ANALYZE: Missing CommandLine field. Available: {list(first_process.keys())}"
+
+            logger.info(f"Process list: {len(pslist_results)} processes found")
+            logger.info(f"Sample process: {first_process}")
 
             # ================================================================
             # Investigation Summary
             # ================================================================
             logger.info("=== INVESTIGATION COMPLETE ===")
-            logger.info(f"TRIAGE: {len(triage_results)} processes found")
-            logger.info(f"COLLECT: flow_id={flow_id} completed")
-            logger.info(f"ANALYZE: {len(analyze_results)} result(s) with {len(client_info.keys())} fields")
+            logger.info(f"TRIAGE: Client {enrolled_client_id} identified (OS: {os_name})")
+            logger.info(f"COLLECT: flow_id={flow_id} completed (2 artifacts)")
+            logger.info(f"ANALYZE: Client info ({len(client_info.keys())} fields) + Process list ({len(pslist_results)} processes)")
 
         finally:
             # Cleanup: Cancel any running flows
