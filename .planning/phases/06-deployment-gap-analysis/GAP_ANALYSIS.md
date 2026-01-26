@@ -338,3 +338,348 @@ These are architectural enhancements for future milestones.
 
 **Recommended v2 Focus:** Priority 1 items (1.1-1.4) should be addressed first as they have highest impact with lowest effort. Priority 2 items can be prioritized based on user feedback.
 
+## Cloud Testing Requirements (v2 Scope)
+
+This section scopes the cloud testing requirements for the next milestone. Cloud deployment validation was explicitly deferred from v1.0 to focus on on-premises validation first.
+
+**Important:** This is a SCOPING document, not implementation. It defines what cloud testing should cover when the project is ready to validate cloud deployments.
+
+### Background
+
+The Megaraptor MCP includes CloudFormation and ARM template deployment capabilities (via `deploy_server_cloud`), but these have not been validated against actual cloud infrastructure. v1.0 focused on:
+- Docker deployment validation (local and remote)
+- Binary deployment via SSH
+- Agent enrollment mechanisms
+
+Cloud validation is the logical next step after on-premises patterns are proven.
+
+### AWS Testing Requirements
+
+#### CLOUD-01: AWS CloudFormation Deployment Validation
+
+**Objective:** Validate that the CloudFormation template deploys a functional Velociraptor server with all expected capabilities.
+
+**Test Scope:**
+
+| Test Case | Description | Pass Criteria |
+|-----------|-------------|---------------|
+| Stack Creation | Template deploys without errors | Stack status: CREATE_COMPLETE |
+| EC2 Accessibility | Server is network-reachable | SSH and HTTPS ports respond |
+| API Health | Velociraptor API responds | Health endpoint returns 200 |
+| Agent Enrollment | Client can enroll | Client appears in list_clients |
+| Artifact Collection | Basic collection works | collect_artifact succeeds |
+| Stack Deletion | Cleanup is complete | All resources removed |
+
+**Infrastructure Prerequisites:**
+
+| Resource | Requirement | Notes |
+|----------|-------------|-------|
+| AWS Account | Full CloudFormation permissions | IAM role or user credentials |
+| VPC | Existing or template-created | Internet gateway required for agent enrollment |
+| EC2 Permissions | Launch t3.medium or larger | Velociraptor needs 2GB+ RAM |
+| Security Group | Allow 443, 8000, 8001 | GUI, frontend, admin ports |
+| S3 Bucket | Optional - for state persistence | Terraform state if using TF wrapper |
+
+**Test Environment Variables:**
+
+```bash
+# Required
+AWS_ACCESS_KEY_ID=<access-key>
+AWS_SECRET_ACCESS_KEY=<secret-key>
+AWS_DEFAULT_REGION=us-east-1
+
+# Optional
+AWS_VPC_ID=vpc-xxx         # Use existing VPC
+AWS_SUBNET_ID=subnet-xxx   # Use existing subnet
+```
+
+**Estimated Test Duration:** 15-30 minutes per full cycle (create, validate, destroy)
+
+**Cost Estimate:** $0.10-0.20 per test cycle (t3.medium spot pricing)
+
+#### CLOUD-01 Test Implementation Outline
+
+```python
+@pytest.mark.cloud
+@pytest.mark.aws
+@skip_if_no_aws_credentials
+async def test_aws_cloudformation_deployment():
+    """Full AWS CloudFormation deployment lifecycle test."""
+    # 1. Deploy stack
+    result = await deploy_server_cloud(
+        provider="aws",
+        template="cloudformation",
+        region="us-east-1",
+        instance_type="t3.medium"
+    )
+    assert result.success
+
+    try:
+        # 2. Wait for healthy
+        await wait_for_deployment_healthy(result.deployment_id, timeout=300)
+
+        # 3. Validate API
+        health = await get_deployment_status(result.deployment_id)
+        assert health["api_healthy"]
+
+        # 4. Test artifact collection (requires enrolled client)
+        # Note: May need separate agent deployment test
+
+    finally:
+        # 5. Cleanup
+        await destroy_deployment(result.deployment_id, force=True)
+
+        # 6. Verify cleanup
+        # Check AWS for orphaned resources
+```
+
+### Azure Testing Requirements
+
+#### CLOUD-02: Azure ARM Template Deployment Validation
+
+**Objective:** Validate that the ARM template deploys a functional Velociraptor server with equivalent capabilities to AWS deployment.
+
+**Test Scope:**
+
+| Test Case | Description | Pass Criteria |
+|-----------|-------------|---------------|
+| Resource Group Creation | RG deploys without errors | Deployment state: Succeeded |
+| VM Accessibility | Server is network-reachable | SSH and HTTPS ports respond |
+| API Health | Velociraptor API responds | Health endpoint returns 200 |
+| Agent Enrollment | Client can enroll | Client appears in list_clients |
+| Artifact Collection | Basic collection works | collect_artifact succeeds |
+| Resource Group Deletion | Cleanup is complete | All resources removed |
+
+**Infrastructure Prerequisites:**
+
+| Resource | Requirement | Notes |
+|----------|-------------|-------|
+| Azure Subscription | Contributor role | Resource deployment permissions |
+| Resource Group | Template-created or existing | Template can create new RG |
+| VNet Permissions | Create or use existing | Subnet with internet access |
+| VM Permissions | Deploy Standard_B2s or larger | Velociraptor needs 2GB+ RAM |
+| NSG | Allow 443, 8000, 8001 | GUI, frontend, admin ports |
+
+**Test Environment Variables:**
+
+```bash
+# Required
+AZURE_SUBSCRIPTION_ID=<subscription-id>
+AZURE_CLIENT_ID=<service-principal-id>
+AZURE_CLIENT_SECRET=<service-principal-secret>
+AZURE_TENANT_ID=<tenant-id>
+
+# Optional
+AZURE_RESOURCE_GROUP=megaraptor-test   # Use existing RG
+AZURE_LOCATION=eastus                  # Deployment region
+```
+
+**Estimated Test Duration:** 15-30 minutes per full cycle
+
+**Cost Estimate:** $0.10-0.20 per test cycle (Standard_B2s pricing)
+
+#### CLOUD-02 Test Implementation Outline
+
+```python
+@pytest.mark.cloud
+@pytest.mark.azure
+@skip_if_no_azure_credentials
+async def test_azure_arm_deployment():
+    """Full Azure ARM template deployment lifecycle test."""
+    # 1. Deploy resources
+    result = await deploy_server_cloud(
+        provider="azure",
+        template="arm",
+        location="eastus",
+        vm_size="Standard_B2s"
+    )
+    assert result.success
+
+    try:
+        # 2. Wait for healthy
+        await wait_for_deployment_healthy(result.deployment_id, timeout=300)
+
+        # 3. Validate API
+        health = await get_deployment_status(result.deployment_id)
+        assert health["api_healthy"]
+
+    finally:
+        # 4. Cleanup
+        await destroy_deployment(result.deployment_id, force=True)
+```
+
+### Cross-Cloud Requirements
+
+#### CLOUD-03: Cross-Cloud Consistency Validation
+
+**Objective:** Verify consistent behavior and capabilities across cloud providers to ensure investigators get the same experience regardless of deployment target.
+
+**Consistency Test Matrix:**
+
+| Capability | AWS Baseline | Azure Must Match |
+|------------|--------------|------------------|
+| Velociraptor Version | Configurable, default latest | Same version |
+| API Configuration | Standard endpoints | Same configuration |
+| Agent Enrollment | MSI/GPO/SSH methods | Same methods |
+| Artifact Collection | All standard artifacts | Same artifacts |
+| VQL Execution | Full VQL support | Same queries work |
+| Cleanup Behavior | Full resource removal | Equivalent cleanup |
+
+**Cross-Cloud Test Cases:**
+
+1. **Version Consistency:** Deploy same Velociraptor version to both clouds, verify `server_version` matches
+2. **API Parity:** Same API calls work identically on both deployments
+3. **Enrollment Parity:** Agents enrolled via same method connect to both clouds
+4. **Artifact Parity:** Same artifact collections produce equivalent structures
+
+**Implementation Notes:**
+
+- Tests require both AWS and Azure credentials
+- May need dedicated test orchestration for cross-cloud scenarios
+- Consider parameterized tests: `@pytest.mark.parametrize("provider", ["aws", "azure"])`
+
+### Test Automation Considerations
+
+#### CI/CD Integration Strategy
+
+Cloud tests have unique requirements compared to local tests:
+
+| Consideration | Recommendation |
+|---------------|----------------|
+| Cost Control | Run on schedule (daily/weekly), not every commit |
+| Instance Types | Use spot/preemptible instances to reduce cost |
+| Budget Alerts | Set monthly budget limits ($50-100) |
+| Parallel Execution | One cloud at a time to avoid cost spikes |
+| Cleanup Verification | Automated check for orphaned resources |
+
+#### Skip Guards for Cloud Tests
+
+```python
+def has_aws_credentials():
+    """Check if AWS credentials are available."""
+    return (
+        os.environ.get("AWS_ACCESS_KEY_ID") and
+        os.environ.get("AWS_SECRET_ACCESS_KEY")
+    )
+
+def has_azure_credentials():
+    """Check if Azure credentials are available."""
+    return (
+        os.environ.get("AZURE_SUBSCRIPTION_ID") and
+        os.environ.get("AZURE_CLIENT_ID") and
+        os.environ.get("AZURE_CLIENT_SECRET") and
+        os.environ.get("AZURE_TENANT_ID")
+    )
+
+skip_if_no_aws_credentials = pytest.mark.skipif(
+    not has_aws_credentials(),
+    reason="AWS credentials not configured"
+)
+
+skip_if_no_azure_credentials = pytest.mark.skipif(
+    not has_azure_credentials(),
+    reason="Azure credentials not configured"
+)
+```
+
+#### Mock Mode for Local Development
+
+For development without cloud credentials:
+
+```python
+@pytest.fixture
+def mock_cloud_deployer(monkeypatch):
+    """Mock cloud deployment for local testing."""
+    async def mock_deploy(*args, **kwargs):
+        return DeploymentResult(
+            success=True,
+            deployment_id="mock-cloud-001",
+            server_url="https://localhost:8000",
+            message="Mock deployment (cloud not available)"
+        )
+
+    monkeypatch.setattr(
+        "megaraptor_mcp.deployment.cloud.deploy_server_cloud",
+        mock_deploy
+    )
+```
+
+### Estimated Resource Requirements
+
+#### AWS Resource Budget
+
+| Resource | Type | Est. Hourly | Monthly Cap |
+|----------|------|-------------|-------------|
+| EC2 | t3.medium | $0.0416 | $30 |
+| EBS | 30GB gp3 | $0.08/GB | $3 |
+| Data Transfer | 1GB/test | $0.09/GB | $10 |
+| **Total** | | | **$43** |
+
+#### Azure Resource Budget
+
+| Resource | Type | Est. Hourly | Monthly Cap |
+|----------|------|-------------|-------------|
+| VM | Standard_B2s | $0.0416 | $30 |
+| Managed Disk | 30GB Standard | $0.05/GB | $2 |
+| Network | 1GB/test | $0.087/GB | $10 |
+| **Total** | | | **$42** |
+
+#### Combined Monthly Budget: $100
+
+Allows approximately 50-100 test cycles per month across both clouds.
+
+### Dependencies on v1.0
+
+Cloud testing should not begin until the following v1.0 items are complete:
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| Docker deployment validation | Complete | Proves core deployment logic |
+| Binary deployment validation | Complete | Proves SSH deployment path |
+| Agent enrollment mechanisms | Complete | Required for full cloud tests |
+| Error handling robustness | Complete | Cloud has more failure modes |
+| Deployment state persistence | Recommended | Helps with test debugging |
+
+### Cloud Testing Roadmap
+
+**Phase 1: AWS Foundation (v2.0)**
+- Implement CLOUD-01 test suite
+- Validate CloudFormation template
+- Document AWS-specific issues
+
+**Phase 2: Azure Parity (v2.0)**
+- Implement CLOUD-02 test suite
+- Validate ARM template
+- Document Azure-specific issues
+
+**Phase 3: Cross-Cloud (v2.1)**
+- Implement CLOUD-03 consistency tests
+- Parameterized provider testing
+- Cross-cloud documentation
+
+**Phase 4: GCP Extension (v2.2+)**
+- Evaluate GCP Deployment Manager support
+- Implement if demand exists
+
+### Cloud Testing Summary
+
+| Requirement | Scope | Infrastructure | Est. Cost |
+|-------------|-------|----------------|-----------|
+| CLOUD-01 | AWS CloudFormation | AWS account, VPC, EC2 | $50/month |
+| CLOUD-02 | Azure ARM | Azure subscription, VNet, VM | $50/month |
+| CLOUD-03 | Cross-cloud consistency | Both clouds | Included |
+
+**v2 Milestone Target:** Validate cloud deployments work end-to-end with same reliability as Docker deployments.
+
+---
+
+## Document Revision History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-01-26 | Initial gap analysis - tool capabilities, deployment recommendations, cloud scope |
+
+---
+
+*This document satisfies requirements GAP-01, GAP-02, and GAP-03 from the v1.0 Quality & Real-World Validation milestone.*
+
