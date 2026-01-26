@@ -80,10 +80,13 @@ Plans:
   4. Invalid parameters (negative limits, empty IDs) are validated with clear messages before execution
   5. Authentication and permission errors are caught and reported without stack traces
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 03-01-PLAN.md — Error handling foundation (validators, gRPC handlers, VQL helpers, client retry)
+- [ ] 03-02-PLAN.md — Error handling for clients.py and artifacts.py tools
+- [ ] 03-03-PLAN.md — Error handling for hunts.py, flows.py, and vql.py tools
+- [ ] 03-04-PLAN.md — Deployment tool errors and comprehensive error handling tests
 
 ### Phase 4: OS-Specific Artifacts
 **Goal**: Artifact collection works across Linux and Windows targets with proper OS-specific validation
@@ -151,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
 | 2. Smoke Tests | 6/6 | Complete | 2026-01-25 |
-| 3. Error Handling | 0/TBD | Not started | - |
+| 3. Error Handling | 0/4 | Planned | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |
 | 5. Output Quality | 0/TBD | Not started | - |
 | 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
