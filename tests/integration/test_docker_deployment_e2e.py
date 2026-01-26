@@ -8,6 +8,10 @@ Note: These tests create real Docker containers. Cleanup is performed automatica
 but containers may be left behind if tests crash unexpectedly.
 
 Test duration: 2-5 minutes for full deployment cycle.
+
+Skip conditions:
+- Docker not available (no docker daemon)
+- Docker image not available (velocidex/velociraptor not accessible)
 """
 
 import asyncio
@@ -17,6 +21,26 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import skip_no_docker
+
+
+def _is_image_pull_error(error_message: str) -> bool:
+    """Check if the error is due to image pull failure.
+
+    These indicate infrastructure availability issues, not test failures.
+    """
+    if not error_message:
+        return False
+
+    pull_error_indicators = [
+        "pull access denied",
+        "repository does not exist",
+        "not found",
+        "unauthorized",
+        "manifest unknown",
+        "no such image",
+    ]
+    error_lower = error_message.lower()
+    return any(indicator in error_lower for indicator in pull_error_indicators)
 
 # Test markers
 pytestmark = [
@@ -154,6 +178,13 @@ class TestDockerDeploymentLifecycle:
                 certificates=test_certificates,
             )
 
+            # Skip if Docker image not available (infrastructure issue, not test failure)
+            if not result.success and _is_image_pull_error(result.error):
+                pytest.skip(
+                    f"Docker image not available: {result.error}. "
+                    "This test requires the velocidex/velociraptor image to be accessible."
+                )
+
             # Verify deployment result structure
             assert result.success, f"Deployment failed: {result.error}"
             assert result.deployment_id == deployment_id
@@ -217,6 +248,13 @@ class TestDockerDeploymentLifecycle:
             profile=profile,
             certificates=test_certificates,
         )
+
+        # Skip if Docker image not available (infrastructure issue, not test failure)
+        if not result.success and _is_image_pull_error(result.error):
+            pytest.skip(
+                f"Docker image not available: {result.error}. "
+                "This test requires the velocidex/velociraptor image to be accessible."
+            )
 
         assert result.success, f"Deployment failed: {result.error}"
 
