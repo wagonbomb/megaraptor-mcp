@@ -55,18 +55,18 @@ Requirements for milestone v1.0 Quality & Real-World Validation. Each maps to ro
 
 ### Deployment Validation
 
-- [ ] **DEPLOY-01**: Docker deployment profile creates running, accessible server
-- [ ] **DEPLOY-02**: Binary deployment profile creates running server on target system
-- [ ] **DEPLOY-03**: Full investigation workflow (triage → collect → analyze) completes e2e
-- [ ] **DEPLOY-04**: Deployment rollback cleans up resources successfully
-- [ ] **DEPLOY-05**: Agent deployment via SSH connects agent to server
-- [ ] **DEPLOY-06**: Agent deployment via WinRM connects Windows agent to server
+- [x] **DEPLOY-01**: Docker deployment profile creates running, accessible server
+- [x] **DEPLOY-02**: Binary deployment profile creates running server on target system
+- [x] **DEPLOY-03**: Full investigation workflow (triage → collect → analyze) completes e2e
+- [x] **DEPLOY-04**: Deployment rollback cleans up resources successfully
+- [x] **DEPLOY-05**: Agent deployment via SSH connects agent to server
+- [x] **DEPLOY-06**: Agent deployment via WinRM connects Windows agent to server
 
 ### Gap Analysis
 
-- [ ] **GAP-01**: Gap analysis document identifies missing tool capabilities
-- [ ] **GAP-02**: Deployment improvement recommendations documented
-- [ ] **GAP-03**: Cloud testing requirements scoped for next milestone
+- [x] **GAP-01**: Gap analysis document identifies missing tool capabilities
+- [x] **GAP-02**: Deployment improvement recommendations documented
+- [x] **GAP-03**: Cloud testing requirements scoped for next milestone
 
 ## v2 Requirements
 
@@ -141,15 +141,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-04 | Phase 5 | Complete |
 | QUAL-05 | Phase 5 | Complete |
 | QUAL-06 | Phase 5 | Complete |
-| DEPLOY-01 | Phase 6 | Pending |
-| DEPLOY-02 | Phase 6 | Pending |
-| DEPLOY-03 | Phase 6 | Pending |
-| DEPLOY-04 | Phase 6 | Pending |
-| DEPLOY-05 | Phase 6 | Pending |
-| DEPLOY-06 | Phase 6 | Pending |
-| GAP-01 | Phase 6 | Pending |
-| GAP-02 | Phase 6 | Pending |
-| GAP-03 | Phase 6 | Pending |
+| DEPLOY-01 | Phase 6 | Complete |
+| DEPLOY-02 | Phase 6 | Complete |
+| DEPLOY-03 | Phase 6 | Complete |
+| DEPLOY-04 | Phase 6 | Complete |
+| DEPLOY-05 | Phase 6 | Complete |
+| DEPLOY-06 | Phase 6 | Complete |
+| GAP-01 | Phase 6 | Complete |
+| GAP-02 | Phase 6 | Complete |
+| GAP-03 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 39 total
@@ -158,4 +158,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-24 after initial definition*
+*Last updated: 2026-01-26 — All v1 requirements complete*
