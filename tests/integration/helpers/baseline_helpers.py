@@ -106,3 +106,53 @@ def get_baseline_hash(artifact_name: str) -> Optional[str]:
         raise KeyError(f"Artifact '{artifact_name}' not found in baseline metadata")
 
     return metadata['baselines'][artifact_name].get('sha256')
+
+
+def parse_velociraptor_timestamp(ts_value: Any) -> float:
+    """Parse Velociraptor timestamp to Unix epoch seconds.
+
+    Handles multiple formats:
+    - RFC3339: 2024-01-26T12:34:56Z
+    - ISO8601: 2024-01-26T12:34:56+00:00
+    - Unix epoch: 1234567890 (int or float)
+    - String Unix epoch: "1234567890"
+
+    Args:
+        ts_value: Timestamp in various formats
+
+    Returns:
+        float: Unix epoch timestamp in seconds
+
+    Raises:
+        ValueError: If timestamp format is unrecognized
+
+    Example:
+        >>> parse_velociraptor_timestamp(1706275200)
+        1706275200.0
+        >>> parse_velociraptor_timestamp("2024-01-26T12:00:00Z")
+        1706275200.0
+    """
+    from datetime import datetime
+
+    # Already numeric
+    if isinstance(ts_value, (int, float)):
+        return float(ts_value)
+
+    # String that looks like epoch
+    if isinstance(ts_value, str):
+        # Try parsing as numeric first
+        try:
+            return float(ts_value)
+        except ValueError:
+            pass
+
+        # Handle RFC3339 with Z suffix
+        ts_str = ts_value.replace('Z', '+00:00')
+
+        try:
+            dt = datetime.fromisoformat(ts_str)
+            return dt.timestamp()
+        except ValueError:
+            raise ValueError(f"Unrecognized timestamp format: {ts_value}")
+
+    raise ValueError(f"Unsupported timestamp type: {type(ts_value)}")
