@@ -56,13 +56,15 @@ Plans:
   4. Basic VQL queries execute without syntax errors and return results
   5. All tool outputs validate against JSON schemas for AI assistant parsing
 
-**Plans**: 4 plans
+**Plans**: 6 plans (4 original + 2 gap closure)
 
 Plans:
-- [ ] 02-01-PLAN.md — Schema registry, MCP helpers, and server connectivity verification
-- [ ] 02-02-PLAN.md — Parametrized smoke tests for all 35 MCP tools
-- [ ] 02-03-PLAN.md — Artifact collection smoke tests (Generic.Client.Info, Generic.System.Pslist)
-- [ ] 02-04-PLAN.md — VQL execution and resource URI smoke tests
+- [x] 02-01-PLAN.md — Schema registry, MCP helpers, and server connectivity verification
+- [x] 02-02-PLAN.md — Parametrized smoke tests for all 35 MCP tools
+- [x] 02-03-PLAN.md — Artifact collection smoke tests (Generic.Client.Info, Generic.System.Pslist)
+- [x] 02-04-PLAN.md — VQL execution and resource URI smoke tests
+- [ ] 02-05-PLAN.md — [GAP CLOSURE] Migrate to FastMCP for SDK 1.25.0 compatibility
+- [ ] 02-06-PLAN.md — [GAP CLOSURE] Fix artifact collection after FastMCP migration
 
 ### Phase 3: Error Handling
 **Goal**: All MCP tools handle failure scenarios gracefully with actionable error messages and no exposed stack traces
@@ -148,7 +150,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
-| 2. Smoke Tests | 0/4 | Planned | - |
+| 2. Smoke Tests | 4/6 | Gap Closure | - |
 | 3. Error Handling | 0/TBD | Not started | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |
 | 5. Output Quality | 0/TBD | Not started | - |
