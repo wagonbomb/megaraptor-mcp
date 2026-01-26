@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 6 of 6 (Deployment & Gap Analysis) - In Progress
-Plan: 1 of 4 complete (06-03-PLAN.md)
-Status: Agent deployment tests with skip guards created (DEPLOY-02, DEPLOY-05, DEPLOY-06)
-Last activity: 2026-01-26 — Completed 06-03-PLAN.md (Agent Deployment Tests)
+Plan: 2 of 4 complete (06-01-PLAN.md, 06-03-PLAN.md)
+Status: Docker deployment E2E tests created (DEPLOY-01, DEPLOY-04) with graceful skip when image unavailable
+Last activity: 2026-01-26 — Completed 06-01-PLAN.md (Docker Deployment E2E Tests)
 
-Progress: [████████░░] 86% (19 of 22 plans complete)
+Progress: [█████████░] 91% (20 of 22 plans complete)
 
 ## Performance Metrics
 
@@ -183,6 +183,14 @@ Recent decisions affecting current work:
 - skip_no_ssh_target and skip_no_winrm_target decorators with actionable messages
 - TestInfrastructureDetection validates helpers even when no targets configured
 
+**From 06-01 execution (Docker Deployment E2E Tests):**
+- Graceful skip for Docker image unavailability via _is_image_pull_error() helper
+- wait_for_deployment_healthy() polls health_check with configurable timeout (default 120s, 5s intervals)
+- verify_container_removed() confirms cleanup via docker.errors.NotFound
+- Unique ports per test to avoid conflicts with existing deployments
+- Short-lived certificates (1 day) for test isolation
+- Test semantics: skip on infrastructure unavailability, fail on actual test bugs
+
 ### Pending Todos
 
 None yet.
@@ -196,9 +204,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 06-03-PLAN.md — Agent Deployment Tests with skip guards
+Stopped at: Completed 06-01-PLAN.md — Docker Deployment E2E Tests
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Continue Phase 6 execution (06-01, 06-02, 06-04 remaining)*
+*Next step: Continue Phase 6 execution (06-02, 06-04 remaining)*
