@@ -9,30 +9,30 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 2 of 6 (Smoke Tests) - Gap Closure
-Plan: 5 of 5 complete (02-05-PLAN.md)
-Status: Phase 2 complete (including gap closure)
-Last activity: 2026-01-25 — Completed 02-05-PLAN.md (FastMCP migration)
+Phase: 2 of 6 (Smoke Tests) - Gap Closure Complete
+Plan: 6 of 6 complete (02-06-PLAN.md)
+Status: Phase 2 complete (all gaps closed)
+Last activity: 2026-01-25 — Completed 02-06-PLAN.md (Artifact Collection Fixes)
 
 Progress: [███░░░░░░░] 33% (2 of 6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 4.0 min
-- Total execution time: 0.53 hours
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
-| 02-smoke-tests | 5 | 22min | 4.4min |
+| 02-smoke-tests | 6 | 30min | 5.0min |
 
 **Recent Trend:**
-- Last 5 plans: 3min, 3min, 4min, 4min, 12min
-- Trend: FastMCP migration took longer due to comprehensive refactoring
+- Last 5 plans: 3min, 4min, 4min, 12min, 8min
+- Trend: Gap closure plans taking longer due to diagnostic work
 
 *Updated after each plan completion*
 
@@ -89,6 +89,12 @@ Recent decisions affecting current work:
 - Tools imported lazily via _register_all() to trigger registration
 - FastMCP call_tool() returns tuple (content_list, metadata) - test helpers updated accordingly
 
+**From 02-06 execution (Gap Closure - Artifact Collection Fixes):**
+- source() VQL requires artifact + source params, not just artifact name
+- Use Linux.Sys.Pslist for Linux containers (Generic.System.Pslist doesn't exist in 0.75.x)
+- Inject VELOCIRAPTOR_CONFIG_PATH env var via autouse fixture for MCP tool tests
+- Deployment tools expected to fail gracefully with "Deployment not found" errors
+
 ### Pending Todos
 
 None yet.
@@ -101,10 +107,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T10:45:00Z
-Stopped at: Completed 02-05-PLAN.md (Gap Closure - FastMCP Migration)
+Last session: 2026-01-25T11:10:00Z
+Stopped at: Completed 02-06-PLAN.md (Gap Closure - Artifact Collection Fixes)
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: /gsd:plan-phase 03 (Phase 2 fully complete including gap closure)*
+*Next step: /gsd:plan-phase 03 (Phase 2 fully complete, all 75 smoke tests passing)*
