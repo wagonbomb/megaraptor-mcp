@@ -122,10 +122,12 @@ Plans:
   4. VQL query results match known-good baselines for correctness
   5. Test fixtures with known-good datasets are documented in tests/fixtures/README.md
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 05-01-PLAN.md — Baseline infrastructure (fixtures directory, helper functions, README documentation)
+- [ ] 05-02-PLAN.md — Hash verification and timestamp accuracy validation tests
+- [ ] 05-03-PLAN.md — Completeness validation, VQL correctness, and NIST CFTT false positive definition
 
 ### Phase 6: Deployment & Gap Analysis
 **Goal**: Deployment automation works end-to-end for Docker and binary profiles, and all capability gaps are documented
@@ -157,7 +159,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Smoke Tests | 6/6 | Complete | 2026-01-25 |
 | 3. Error Handling | 4/4 | Complete | 2026-01-26 |
 | 4. OS-Specific Artifacts | 2/2 | Complete | 2026-01-26 |
-| 5. Output Quality | 0/TBD | Not started | - |
+| 5. Output Quality | 0/3 | Not started | - |
 | 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
 
 ---
