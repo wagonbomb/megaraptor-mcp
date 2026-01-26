@@ -4,12 +4,37 @@ Tests that each MCP tool can be invoked without raising exceptions.
 Validates basic response structure and graceful error handling.
 
 This validates SMOKE-01 (all tools callable) and SMOKE-05 (JSON Schema validation).
+
+Note: MCP tools use get_client() which loads config from VELOCIRAPTOR_CONFIG_PATH
+environment variable. The set_velociraptor_config fixture ensures this is set
+before tools are invoked.
 """
 
+import os
 import pytest
 
 from tests.integration.helpers.mcp_helpers import invoke_mcp_tool, replace_placeholders
 from tests.integration.schemas import get_tool_schema
+
+
+@pytest.fixture(autouse=True)
+def set_velociraptor_config(velociraptor_api_config, monkeypatch):
+    """Set VELOCIRAPTOR_CONFIG_PATH environment variable for MCP tools.
+
+    MCP tools use get_client() which loads config from environment.
+    This fixture ensures the config path is available to tools.
+    """
+    config_path = velociraptor_api_config.get("config_path")
+    if config_path:
+        monkeypatch.setenv("VELOCIRAPTOR_CONFIG_PATH", config_path)
+
+    # Also reset the global client so it picks up the new config
+    from megaraptor_mcp.client import reset_client
+    reset_client()
+
+    yield
+
+    reset_client()
 
 # Map of all 35 MCP tools with minimal smoke test inputs
 # Each entry: (tool_name, base_arguments, requires_client_id)
@@ -128,7 +153,17 @@ async def test_mcp_tool_smoke(tool_name, arguments, requires_client, enrolled_cl
     # If tool failed, verify it's a graceful error (not an exception)
     if not success:
         # Deployment tools often error on missing infrastructure - that's expected
-        if "deployment" in tool_name or "deploy" in tool_name:
+        # Include all tools that require deployment infrastructure to exist
+        deployment_tools = {
+            "deploy_server", "deploy_server_docker", "deploy_server_cloud",
+            "get_deployment_status", "destroy_deployment", "list_deployments",
+            "generate_agent_installer", "create_offline_collector", "generate_gpo_package",
+            "generate_ansible_playbook", "deploy_agents_winrm", "deploy_agents_ssh",
+            "check_agent_deployment",
+            "generate_server_config", "generate_api_credentials", "rotate_certificates",
+            "validate_deployment", "export_deployment_docs",
+        }
+        if tool_name in deployment_tools:
             # Graceful error expected for deployment tools in test environment
             assert isinstance(response, str), f"{tool_name} error should be string"
             return
