@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** All 35 MCP tools work reliably against real Velociraptor deployments with actionable output and graceful error handling
-**Current focus:** Phase 1 - Test Infrastructure
+**Current focus:** Phase 2 - Smoke Tests (Gap Closure)
 
 ## Current Position
 
-Phase: 2 of 6 (Smoke Tests) - COMPLETE
-Plan: 4 of 4 complete (02-04-PLAN.md)
-Status: Phase 2 complete
-Last activity: 2026-01-25 — Completed 02-04-PLAN.md
+Phase: 2 of 6 (Smoke Tests) - Gap Closure
+Plan: 5 of 5 complete (02-05-PLAN.md)
+Status: Phase 2 complete (including gap closure)
+Last activity: 2026-01-25 — Completed 02-05-PLAN.md (FastMCP migration)
 
 Progress: [███░░░░░░░] 33% (2 of 6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 3.4 min
-- Total execution time: 0.40 hours
+- Total plans completed: 8
+- Average duration: 4.0 min
+- Total execution time: 0.53 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
-| 02-smoke-tests | 4 | 14min | 3.5min |
+| 02-smoke-tests | 5 | 22min | 4.4min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 3min, 3min, 3min, 4min
-- Trend: Consistent velocity ~3-4min per plan
+- Last 5 plans: 3min, 3min, 4min, 4min, 12min
+- Trend: FastMCP migration took longer due to comprehensive refactoring
 
 *Updated after each plan completion*
 
@@ -84,6 +84,11 @@ Recent decisions affecting current work:
 - Use soft assertions (pytest-check) for detailed smoke test failure reporting
 - Test error conditions return JSON gracefully, not exceptions
 
+**From 02-05 execution (Gap Closure - FastMCP Migration):**
+- Module-level FastMCP instance exported as 'mcp' for tool decorator access
+- Tools imported lazily via _register_all() to trigger registration
+- FastMCP call_tool() returns tuple (content_list, metadata) - test helpers updated accordingly
+
 ### Pending Todos
 
 None yet.
@@ -96,10 +101,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T22:30:09Z
-Stopped at: Completed 02-04-PLAN.md (Phase 2 complete)
+Last session: 2026-01-25T10:45:00Z
+Stopped at: Completed 02-05-PLAN.md (Gap Closure - FastMCP Migration)
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: /gsd:plan-phase 03 (Phase 2 complete, move to Phase 3)*
+*Next step: /gsd:plan-phase 03 (Phase 2 fully complete including gap closure)*
