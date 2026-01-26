@@ -22,8 +22,8 @@ def extract_vql_error_hint(error_message: str) -> str:
 
     # Symbol not found - likely plugin/function name issue
     if "symbol" in error_lower and "not found" in error_lower:
-        # Try to extract the symbol name
-        match = re.search(r"symbol[:\s]+['\"]?(\w+)['\"]?\s+not found", error_message, re.IGNORECASE)
+        # Try to extract the symbol name (including dots for namespaced symbols)
+        match = re.search(r"symbol[:\s]+['\"]?([\w.]+)['\"]?\s+not found", error_message, re.IGNORECASE)
         symbol = match.group(1) if match else "unknown"
 
         return (
