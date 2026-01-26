@@ -1,17 +1,21 @@
-"""MCP Tools for Velociraptor operations."""
+"""MCP Tools for Velociraptor operations.
 
-from .clients import register_client_tools
-from .artifacts import register_artifact_tools
-from .hunts import register_hunt_tools
-from .flows import register_flow_tools
-from .vql import register_vql_tools
-from .deployment import register_deployment_tools
+Tools are registered via @mcp.tool() decorators when modules are imported.
+"""
+
+# Import tool modules to trigger registration via decorators
+from . import clients
+from . import artifacts
+from . import hunts
+from . import flows
+from . import vql
+from . import deployment
 
 __all__ = [
-    "register_client_tools",
-    "register_artifact_tools",
-    "register_hunt_tools",
-    "register_flow_tools",
-    "register_vql_tools",
-    "register_deployment_tools",
+    "clients",
+    "artifacts",
+    "hunts",
+    "flows",
+    "vql",
+    "deployment",
 ]

@@ -4,177 +4,24 @@ MCP Prompts for DFIR workflows.
 Provides pre-built prompts for common digital forensics and incident response workflows.
 """
 
-from mcp.server import Server
-from mcp.types import Prompt, PromptArgument, PromptMessage, TextContent
+from ..server import mcp
 
 
-def register_prompts(server: Server) -> None:
-    """Register DFIR workflow prompts with the MCP server."""
+# =========================================================================
+# Investigation Prompts
+# =========================================================================
 
-    @server.list_prompts()
-    async def list_prompts() -> list[Prompt]:
-        """List available DFIR workflow prompts."""
-        return [
-            Prompt(
-                name="investigate_endpoint",
-                description="Start a comprehensive investigation on a specific endpoint. Guides through system interrogation, process analysis, network connections, and persistence mechanisms.",
-                arguments=[
-                    PromptArgument(
-                        name="client_id",
-                        description="The Velociraptor client ID (e.g., C.1234567890abcdef) or hostname to investigate",
-                        required=True,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="threat_hunt",
-                description="Create and execute a threat hunting campaign across multiple endpoints. Helps build hunts for specific IOCs, TTPs, or suspicious behaviors.",
-                arguments=[
-                    PromptArgument(
-                        name="indicators",
-                        description="Indicators of compromise (IOCs) or behaviors to hunt for",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="hunt_type",
-                        description="Type of hunt: 'file', 'process', 'network', 'registry', 'persistence', or 'custom'",
-                        required=False,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="triage_incident",
-                description="Rapid incident triage workflow. Quickly collects critical forensic artifacts for initial assessment and scoping.",
-                arguments=[
-                    PromptArgument(
-                        name="client_id",
-                        description="The Velociraptor client ID of the affected endpoint",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="incident_type",
-                        description="Type of incident: 'malware', 'intrusion', 'data_exfil', 'ransomware', or 'unknown'",
-                        required=False,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="malware_analysis",
-                description="Analyze potentially malicious files or processes. Guides through file analysis, process inspection, and behavioral indicators.",
-                arguments=[
-                    PromptArgument(
-                        name="client_id",
-                        description="The Velociraptor client ID where the suspected malware exists",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="target",
-                        description="File path or process name to analyze",
-                        required=True,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="lateral_movement",
-                description="Detect and investigate lateral movement indicators. Checks for RDP, SMB, WMI, PowerShell remoting, and other lateral movement techniques.",
-                arguments=[
-                    PromptArgument(
-                        name="scope",
-                        description="Investigation scope: specific client_id, 'label:xxx' for labeled clients, or 'all' for enterprise-wide",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="timeframe",
-                        description="Time range to investigate (e.g., '24h', '7d', '30d')",
-                        required=False,
-                    ),
-                ],
-            ),
-            # Deployment prompts
-            Prompt(
-                name="rapid_ir_deployment",
-                description="Guided workflow for rapid Velociraptor deployment during an active incident. Gets you from zero to collecting artifacts in under 5 minutes.",
-                arguments=[
-                    PromptArgument(
-                        name="target_count",
-                        description="Approximate number of endpoints to deploy to",
-                        required=False,
-                    ),
-                    PromptArgument(
-                        name="environment",
-                        description="Environment type: 'windows_domain', 'mixed', 'linux', or 'cloud'",
-                        required=False,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="deploy_and_triage",
-                description="Deploy Velociraptor and immediately begin triage collection on affected systems.",
-                arguments=[
-                    PromptArgument(
-                        name="incident_type",
-                        description="Type of incident: 'ransomware', 'intrusion', 'malware', 'data_breach', or 'unknown'",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="affected_systems",
-                        description="List of affected system hostnames or IPs (comma-separated)",
-                        required=True,
-                    ),
-                ],
-            ),
-            Prompt(
-                name="offline_collection_kit",
-                description="Generate a complete offline collection kit for air-gapped or isolated systems.",
-                arguments=[
-                    PromptArgument(
-                        name="target_os",
-                        description="Target operating system: 'windows', 'linux', or 'macos'",
-                        required=True,
-                    ),
-                    PromptArgument(
-                        name="collection_type",
-                        description="Collection type: 'triage', 'full', 'memory', or 'custom'",
-                        required=False,
-                    ),
-                ],
-            ),
-        ]
+@mcp.prompt()
+async def investigate_endpoint(client_id: str) -> str:
+    """Start a comprehensive investigation on a specific endpoint.
 
-    @server.get_prompt()
-    async def get_prompt(name: str, arguments: dict[str, str] | None = None) -> list[PromptMessage]:
-        """Get a specific DFIR workflow prompt."""
-        arguments = arguments or {}
+    Guides through system interrogation, process analysis, network connections,
+    and persistence mechanisms.
 
-        if name == "investigate_endpoint":
-            return _get_investigate_endpoint_prompt(arguments)
-        elif name == "threat_hunt":
-            return _get_threat_hunt_prompt(arguments)
-        elif name == "triage_incident":
-            return _get_triage_incident_prompt(arguments)
-        elif name == "malware_analysis":
-            return _get_malware_analysis_prompt(arguments)
-        elif name == "lateral_movement":
-            return _get_lateral_movement_prompt(arguments)
-        elif name == "rapid_ir_deployment":
-            return _get_rapid_ir_deployment_prompt(arguments)
-        elif name == "deploy_and_triage":
-            return _get_deploy_and_triage_prompt(arguments)
-        elif name == "offline_collection_kit":
-            return _get_offline_collection_kit_prompt(arguments)
-        else:
-            raise ValueError(f"Unknown prompt: {name}")
-
-
-def _get_investigate_endpoint_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the investigate_endpoint prompt."""
-    client_id = arguments.get("client_id", "<client_id>")
-
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to investigate the endpoint with identifier: {client_id}
+    Args:
+        client_id: The Velociraptor client ID (e.g., C.1234567890abcdef) or hostname to investigate
+    """
+    return f"""I need to investigate the endpoint with identifier: {client_id}
 
 Please help me conduct a comprehensive forensic investigation by:
 
@@ -211,20 +58,19 @@ Please help me conduct a comprehensive forensic investigation by:
    - Check temp directories and downloads folder
 
 Please start with step 1 and guide me through each phase, highlighting any findings that warrant further investigation. Use the appropriate Velociraptor tools to collect this information."""
-        )
-    )]
 
 
-def _get_threat_hunt_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the threat_hunt prompt."""
-    indicators = arguments.get("indicators", "<indicators>")
-    hunt_type = arguments.get("hunt_type", "custom")
+@mcp.prompt()
+async def threat_hunt(indicators: str, hunt_type: str = "custom") -> str:
+    """Create and execute a threat hunting campaign across multiple endpoints.
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to conduct a threat hunt across my environment.
+    Helps build hunts for specific IOCs, TTPs, or suspicious behaviors.
+
+    Args:
+        indicators: Indicators of compromise (IOCs) or behaviors to hunt for
+        hunt_type: Type of hunt - 'file', 'process', 'network', 'registry', 'persistence', or 'custom'
+    """
+    return f"""I need to conduct a threat hunt across my environment.
 
 **Indicators/Behaviors to hunt for:**
 {indicators}
@@ -264,15 +110,18 @@ Please help me create and execute this threat hunt by:
    - Provide recommendations for remediation
 
 Let's start by analyzing the indicators and determining the best hunting strategy."""
-        )
-    )]
 
 
-def _get_triage_incident_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the triage_incident prompt."""
-    client_id = arguments.get("client_id", "<client_id>")
-    incident_type = arguments.get("incident_type", "unknown")
+@mcp.prompt()
+async def triage_incident(client_id: str, incident_type: str = "unknown") -> str:
+    """Rapid incident triage workflow.
 
+    Quickly collects critical forensic artifacts for initial assessment and scoping.
+
+    Args:
+        client_id: The Velociraptor client ID of the affected endpoint
+        incident_type: Type of incident - 'malware', 'intrusion', 'data_exfil', 'ransomware', or 'unknown'
+    """
     artifact_recommendations = {
         "malware": ["Windows.System.Pslist", "Windows.Detection.Autoruns", "Windows.System.Services", "Windows.Network.Netstat"],
         "intrusion": ["Windows.EventLogs.Evtx", "Windows.System.Users", "Windows.Network.Connections", "Windows.Detection.Autoruns"],
@@ -283,11 +132,7 @@ def _get_triage_incident_prompt(arguments: dict[str, str]) -> list[PromptMessage
 
     recommended_artifacts = artifact_recommendations.get(incident_type, artifact_recommendations["unknown"])
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""URGENT: Incident triage needed for endpoint {client_id}
+    return f"""URGENT: Incident triage needed for endpoint {client_id}
 
 **Incident Type:** {incident_type}
 
@@ -332,20 +177,19 @@ Please help me rapidly triage this incident by collecting critical forensic data
    - Escalation recommendations
 
 Let's start immediately with the urgent collection. Time is critical."""
-        )
-    )]
 
 
-def _get_malware_analysis_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the malware_analysis prompt."""
-    client_id = arguments.get("client_id", "<client_id>")
-    target = arguments.get("target", "<file_path_or_process>")
+@mcp.prompt()
+async def malware_analysis(client_id: str, target: str) -> str:
+    """Analyze potentially malicious files or processes.
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to analyze a potentially malicious file or process.
+    Guides through file analysis, process inspection, and behavioral indicators.
+
+    Args:
+        client_id: The Velociraptor client ID where the suspected malware exists
+        target: File path or process name to analyze
+    """
+    return f"""I need to analyze a potentially malicious file or process.
 
 **Endpoint:** {client_id}
 **Target:** {target}
@@ -393,20 +237,19 @@ Please help me analyze this potential malware by:
    - Suggest additional investigation steps
 
 Let's start by identifying and collecting information about the target."""
-        )
-    )]
 
 
-def _get_lateral_movement_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the lateral_movement prompt."""
-    scope = arguments.get("scope", "all")
-    timeframe = arguments.get("timeframe", "24h")
+@mcp.prompt()
+async def lateral_movement(scope: str, timeframe: str = "24h") -> str:
+    """Detect and investigate lateral movement indicators.
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to detect and investigate potential lateral movement in my environment.
+    Checks for RDP, SMB, WMI, PowerShell remoting, and other lateral movement techniques.
+
+    Args:
+        scope: Investigation scope - specific client_id, 'label:xxx' for labeled clients, or 'all' for enterprise-wide
+        timeframe: Time range to investigate (e.g., '24h', '7d', '30d')
+    """
+    return f"""I need to detect and investigate potential lateral movement in my environment.
 
 **Investigation Scope:** {scope}
 **Timeframe:** {timeframe}
@@ -473,20 +316,23 @@ Please help me hunt for lateral movement indicators by checking:
 {'Create a hunt across all clients' if scope == 'all' else f'Focus investigation on {scope}'} for the past {timeframe}.
 
 Let's start by setting up the appropriate hunts to detect these lateral movement techniques."""
-        )
-    )]
 
 
-def _get_rapid_ir_deployment_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the rapid_ir_deployment prompt."""
-    target_count = arguments.get("target_count", "unknown")
-    environment = arguments.get("environment", "mixed")
+# =========================================================================
+# Deployment Prompts
+# =========================================================================
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to rapidly deploy Velociraptor for an active incident response.
+@mcp.prompt()
+async def rapid_ir_deployment(target_count: str = "unknown", environment: str = "mixed") -> str:
+    """Guided workflow for rapid Velociraptor deployment during an active incident.
+
+    Gets you from zero to collecting artifacts in under 5 minutes.
+
+    Args:
+        target_count: Approximate number of endpoints to deploy to
+        environment: Environment type - 'windows_domain', 'mixed', 'linux', or 'cloud'
+    """
+    return f"""I need to rapidly deploy Velociraptor for an active incident response.
 
 **Target Environment:**
 - Approximate endpoint count: {target_count}
@@ -543,16 +389,16 @@ Once agents are enrolled:
 - Windows.EventLogs.Evtx - Security event logs
 
 Let's start immediately with Phase 1. Deploy the server now."""
-        )
-    )]
 
 
-def _get_deploy_and_triage_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the deploy_and_triage prompt."""
-    incident_type = arguments.get("incident_type", "unknown")
-    affected_systems = arguments.get("affected_systems", "")
+@mcp.prompt()
+async def deploy_and_triage(incident_type: str, affected_systems: str) -> str:
+    """Deploy Velociraptor and immediately begin triage collection on affected systems.
 
-    # Artifact recommendations by incident type
+    Args:
+        incident_type: Type of incident - 'ransomware', 'intrusion', 'malware', 'data_breach', or 'unknown'
+        affected_systems: List of affected system hostnames or IPs (comma-separated)
+    """
     artifact_sets = {
         "ransomware": [
             "Windows.Detection.Ransomware",
@@ -592,11 +438,7 @@ def _get_deploy_and_triage_prompt(arguments: dict[str, str]) -> list[PromptMessa
 
     recommended = artifact_sets.get(incident_type, artifact_sets["unknown"])
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""URGENT: Deploy Velociraptor and begin immediate triage.
+    return f"""URGENT: Deploy Velociraptor and begin immediate triage.
 
 **Incident Type:** {incident_type}
 **Affected Systems:** {affected_systems}
@@ -664,15 +506,16 @@ Once collection completes:
 {"- Identify accessed data and exfiltration methods" if incident_type == "data_breach" else ""}
 
 Let's begin deployment immediately. Time is critical."""
-        )
-    )]
 
 
-def _get_offline_collection_kit_prompt(arguments: dict[str, str]) -> list[PromptMessage]:
-    """Generate the offline_collection_kit prompt."""
-    target_os = arguments.get("target_os", "windows")
-    collection_type = arguments.get("collection_type", "triage")
+@mcp.prompt()
+async def offline_collection_kit(target_os: str, collection_type: str = "triage") -> str:
+    """Generate a complete offline collection kit for air-gapped or isolated systems.
 
+    Args:
+        target_os: Target operating system - 'windows', 'linux', or 'macos'
+        collection_type: Collection type - 'triage', 'full', 'memory', or 'custom'
+    """
     artifact_sets = {
         "windows": {
             "triage": ["Windows.KapeFiles.Targets", "Windows.System.Pslist", "Windows.Network.Netstat"],
@@ -694,11 +537,7 @@ def _get_offline_collection_kit_prompt(arguments: dict[str, str]) -> list[Prompt
     os_artifacts = artifact_sets.get(target_os, artifact_sets["windows"])
     selected_artifacts = os_artifacts.get(collection_type, os_artifacts["triage"])
 
-    return [PromptMessage(
-        role="user",
-        content=TextContent(
-            type="text",
-            text=f"""I need to create an offline collection kit for air-gapped or isolated systems.
+    return f"""I need to create an offline collection kit for air-gapped or isolated systems.
 
 **Target OS:** {target_os}
 **Collection Type:** {collection_type}
@@ -767,5 +606,3 @@ Import the collected data into Velociraptor server or analyze directly:
 - Maintain chain of custody documentation
 
 Would you like me to generate the collection kit now?"""
-        )
-    )]

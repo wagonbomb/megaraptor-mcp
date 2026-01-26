@@ -1,5 +1,8 @@
-"""MCP Resources for browsing Velociraptor data."""
+"""MCP Resources for browsing Velociraptor data.
 
-from .resources import register_resources
+Resources are registered via decorators when the module is imported.
+"""
 
-__all__ = ["register_resources"]
+from . import resources
+
+__all__ = ["resources"]

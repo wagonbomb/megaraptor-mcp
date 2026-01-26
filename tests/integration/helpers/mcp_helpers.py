@@ -6,7 +6,9 @@ Provides clean interface for invoking MCP tools in tests.
 import json
 from typing import Any, Optional
 
-from megaraptor_mcp.server import create_server
+# Import mcp and trigger tool registration
+from megaraptor_mcp.server import mcp
+from megaraptor_mcp import tools  # noqa: F401 - triggers @mcp.tool() registration
 
 
 async def invoke_mcp_tool(
@@ -24,16 +26,24 @@ async def invoke_mcp_tool(
         - success=True, response=parsed JSON data
         - success=False, response=error message string
     """
-    server = create_server()
-
     try:
-        result = await server.call_tool(tool_name, arguments)
+        result = await mcp.call_tool(tool_name, arguments)
 
         if not result:
             return False, "Tool returned empty result"
 
+        # FastMCP's call_tool returns (content_list, metadata_dict)
+        # Handle both tuple and list return types
+        if isinstance(result, tuple):
+            content_list = result[0]  # First element is the content list
+        else:
+            content_list = result
+
+        if not content_list:
+            return False, "Tool returned empty content"
+
         # First content item should be TextContent
-        content = result[0]
+        content = content_list[0]
 
         if not hasattr(content, 'text'):
             return False, f"Response missing 'text' attribute: {type(content)}"
@@ -60,7 +70,7 @@ def parse_tool_response(result: list) -> tuple[bool, Any]:
     """Parse an MCP tool result into usable data.
 
     Args:
-        result: Raw result from server.call_tool()
+        result: Raw result from mcp.call_tool() - may be tuple or list
 
     Returns:
         Tuple of (success: bool, data: Any)
@@ -68,7 +78,16 @@ def parse_tool_response(result: list) -> tuple[bool, Any]:
     if not result:
         return False, "Empty result"
 
-    content = result[0]
+    # FastMCP's call_tool returns (content_list, metadata_dict)
+    if isinstance(result, tuple):
+        content_list = result[0]
+    else:
+        content_list = result
+
+    if not content_list:
+        return False, "Empty content"
+
+    content = content_list[0]
 
     if not hasattr(content, 'text'):
         return False, f"Missing 'text' attribute: {type(content)}"

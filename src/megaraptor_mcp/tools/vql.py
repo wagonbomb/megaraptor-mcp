@@ -7,88 +7,86 @@ Provides a tool for executing arbitrary VQL (Velociraptor Query Language) querie
 import json
 from typing import Any, Optional
 
-from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent
 
+from ..server import mcp
 from ..client import get_client
 
 
-def register_vql_tools(server: Server) -> None:
-    """Register VQL query tools with the MCP server."""
+@mcp.tool()
+async def run_vql(
+    query: str,
+    env: Optional[dict[str, Any]] = None,
+    max_rows: int = 10000,
+    org_id: Optional[str] = None,
+) -> list[TextContent]:
+    """Execute an arbitrary VQL (Velociraptor Query Language) query.
 
-    @server.tool()
-    async def run_vql(
-        query: str,
-        env: Optional[dict[str, Any]] = None,
-        max_rows: int = 10000,
-        org_id: Optional[str] = None,
-    ) -> list[TextContent]:
-        """Execute an arbitrary VQL (Velociraptor Query Language) query.
+    VQL is the query language used by Velociraptor for forensic analysis.
+    It follows a SQL-like syntax with plugins instead of tables.
 
-        VQL is the query language used by Velociraptor for forensic analysis.
-        It follows a SQL-like syntax with plugins instead of tables.
+    Common VQL patterns:
+    - SELECT * FROM info()  -- Get server info
+    - SELECT * FROM clients()  -- List all clients
+    - SELECT * FROM pslist()  -- List processes (client artifact)
+    - SELECT * FROM Artifact.Windows.System.Pslist()  -- Run artifact
 
-        Common VQL patterns:
-        - SELECT * FROM info()  -- Get server info
-        - SELECT * FROM clients()  -- List all clients
-        - SELECT * FROM pslist()  -- List processes (client artifact)
-        - SELECT * FROM Artifact.Windows.System.Pslist()  -- Run artifact
+    Args:
+        query: The VQL query to execute
+        env: Optional environment variables to pass to the query.
+             Use this to safely pass dynamic values instead of string interpolation.
+        max_rows: Maximum number of rows to return (default 10000)
+        org_id: Optional organization ID for multi-tenant deployments
 
-        Args:
-            query: The VQL query to execute
-            env: Optional environment variables to pass to the query.
-                 Use this to safely pass dynamic values instead of string interpolation.
-            max_rows: Maximum number of rows to return (default 10000)
-            org_id: Optional organization ID for multi-tenant deployments
+    Returns:
+        Query results as JSON.
+    """
+    client = get_client()
 
-        Returns:
-            Query results as JSON.
-        """
-        client = get_client()
+    # Add LIMIT if not already present and query doesn't have one
+    query_upper = query.upper()
+    if "LIMIT" not in query_upper:
+        query = f"{query.rstrip(';')} LIMIT {max_rows}"
 
-        # Add LIMIT if not already present and query doesn't have one
-        query_upper = query.upper()
-        if "LIMIT" not in query_upper:
-            query = f"{query.rstrip(';')} LIMIT {max_rows}"
+    try:
+        results = client.query(query, env=env, org_id=org_id)
 
-        try:
-            results = client.query(query, env=env, org_id=org_id)
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "query": query,
+                "row_count": len(results),
+                "results": results,
+            }, indent=2, default=str)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": str(e),
+                "query": query,
+            })
+        )]
 
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "query": query,
-                    "row_count": len(results),
-                    "results": results,
-                }, indent=2, default=str)
-            )]
-        except Exception as e:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "error": str(e),
-                    "query": query,
-                })
-            )]
 
-    @server.tool()
-    async def vql_help(
-        topic: Optional[str] = None,
-    ) -> list[TextContent]:
-        """Get help on VQL (Velociraptor Query Language).
+@mcp.tool()
+async def vql_help(
+    topic: Optional[str] = None,
+) -> list[TextContent]:
+    """Get help on VQL (Velociraptor Query Language).
 
-        Args:
-            topic: Optional topic to get help on. Options:
-                   - 'syntax': VQL syntax basics
-                   - 'plugins': Common VQL plugins
-                   - 'functions': Common VQL functions
-                   - 'examples': Example queries
+    Args:
+        topic: Optional topic to get help on. Options:
+               - 'syntax': VQL syntax basics
+               - 'plugins': Common VQL plugins
+               - 'functions': Common VQL functions
+               - 'examples': Example queries
 
-        Returns:
-            Help text for the requested topic.
-        """
-        help_content = {
-            "syntax": """
+    Returns:
+        Help text for the requested topic.
+    """
+    help_content = {
+        "syntax": """
 # VQL Syntax Basics
 
 VQL follows a SQL-like syntax:
@@ -107,7 +105,7 @@ Key differences from SQL:
 - Supports LET for variable assignment
 - Supports foreach() for iteration
 """,
-            "plugins": """
+        "plugins": """
 # Common VQL Plugins
 
 ## Client Information
@@ -141,7 +139,7 @@ Key differences from SQL:
 - registry() - Registry access
 - evtx() - Event log parsing
 """,
-            "functions": """
+        "functions": """
 # Common VQL Functions
 
 ## String Functions
@@ -167,7 +165,7 @@ Key differences from SQL:
 - hash() - Calculate hash
 - upload() - Upload file to server
 """,
-            "examples": """
+        "examples": """
 # VQL Example Queries
 
 ## List all Windows clients
@@ -206,16 +204,16 @@ SELECT * FROM source(
 )
 ```
 """,
-        }
+    }
 
-        if topic and topic in help_content:
-            return [TextContent(
-                type="text",
-                text=help_content[topic]
-            )]
-        else:
-            # Return overview of all topics
-            overview = """
+    if topic and topic in help_content:
+        return [TextContent(
+            type="text",
+            text=help_content[topic]
+        )]
+    else:
+        # Return overview of all topics
+        overview = """
 # VQL Help
 
 VQL (Velociraptor Query Language) is the core query language for Velociraptor.
@@ -230,7 +228,7 @@ Use vql_help(topic='<topic>') to get detailed help on a specific topic.
 
 For complete VQL reference, see: https://docs.velociraptor.app/vql_reference/
 """
-            return [TextContent(
-                type="text",
-                text=overview
-            )]
+        return [TextContent(
+            type="text",
+            text=overview
+        )]

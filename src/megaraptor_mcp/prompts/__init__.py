@@ -1,5 +1,8 @@
-"""MCP Prompts for DFIR workflows."""
+"""MCP Prompts for DFIR workflows.
 
-from .prompts import register_prompts
+Prompts are registered via decorators when the module is imported.
+"""
 
-__all__ = ["register_prompts"]
+from . import prompts
+
+__all__ = ["prompts"]

@@ -7,22 +7,10 @@ An MCP server that provides access to Velociraptor DFIR capabilities.
 import asyncio
 import logging
 import sys
-from typing import Optional
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
 from . import __version__
-from .tools import (
-    register_client_tools,
-    register_artifact_tools,
-    register_hunt_tools,
-    register_flow_tools,
-    register_vql_tools,
-    register_deployment_tools,
-)
-from .resources import register_resources
-from .prompts import register_prompts
 
 # Configure logging
 logging.basicConfig(
@@ -32,55 +20,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger("megaraptor-mcp")
 
+# Create module-level FastMCP instance
+# Tools, resources, and prompts register via decorators on import
+mcp = FastMCP("megaraptor-mcp")
 
-def create_server() -> Server:
-    """Create and configure the MCP server."""
-    server = Server("megaraptor-mcp")
 
-    # Register all tools
-    logger.info("Registering client management tools...")
-    register_client_tools(server)
+def _register_all() -> None:
+    """Import all tool/resource/prompt modules to trigger registration."""
+    # Import tools - this registers them via @mcp.tool() decorators
+    from . import tools  # noqa: F401
 
-    logger.info("Registering artifact tools...")
-    register_artifact_tools(server)
+    # Import resources - this registers them via @mcp.resource() decorators
+    from . import resources  # noqa: F401
 
-    logger.info("Registering hunt tools...")
-    register_hunt_tools(server)
+    # Import prompts - this registers them via @mcp.prompt() decorators
+    from . import prompts  # noqa: F401
 
-    logger.info("Registering flow tools...")
-    register_flow_tools(server)
-
-    logger.info("Registering VQL tools...")
-    register_vql_tools(server)
-
-    logger.info("Registering deployment tools...")
-    register_deployment_tools(server)
-
-    # Register resources
-    logger.info("Registering resources...")
-    register_resources(server)
-
-    # Register prompts
-    logger.info("Registering prompts...")
-    register_prompts(server)
-
-    return server
+    logger.info("All tools, resources, and prompts registered")
 
 
 async def run_server() -> None:
     """Run the MCP server."""
     logger.info(f"Starting Megaraptor MCP Server v{__version__}")
 
-    server = create_server()
+    # Register all tools/resources/prompts
+    _register_all()
 
     # Run with stdio transport
-    async with stdio_server() as (read_stream, write_stream):
-        logger.info("Server started, waiting for connections...")
-        await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options(),
-        )
+    await mcp.run_stdio_async()
 
 
 def main() -> None:

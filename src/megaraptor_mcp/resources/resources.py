@@ -6,81 +6,12 @@ Provides browsable resources for clients, hunts, and artifacts.
 
 import json
 from typing import Any
-from urllib.parse import urlparse
 
-from mcp.server import Server
-from mcp.types import Resource, TextContent
-
+from ..server import mcp
 from ..client import get_client
 
 
-def register_resources(server: Server) -> None:
-    """Register MCP resources with the server."""
-
-    @server.list_resources()
-    async def list_resources() -> list[Resource]:
-        """List available Velociraptor resources."""
-        return [
-            Resource(
-                uri="velociraptor://clients",
-                name="Velociraptor Clients",
-                description="Browse connected Velociraptor endpoints",
-                mimeType="application/json",
-            ),
-            Resource(
-                uri="velociraptor://hunts",
-                name="Velociraptor Hunts",
-                description="Browse Velociraptor hunt campaigns",
-                mimeType="application/json",
-            ),
-            Resource(
-                uri="velociraptor://artifacts",
-                name="Velociraptor Artifacts",
-                description="Browse available Velociraptor artifacts",
-                mimeType="application/json",
-            ),
-            Resource(
-                uri="velociraptor://server-info",
-                name="Server Information",
-                description="Velociraptor server information and status",
-                mimeType="application/json",
-            ),
-            Resource(
-                uri="velociraptor://deployments",
-                name="Managed Deployments",
-                description="List of Velociraptor deployments managed by Megaraptor MCP",
-                mimeType="application/json",
-            ),
-        ]
-
-    @server.read_resource()
-    async def read_resource(uri: str) -> str:
-        """Read a Velociraptor resource."""
-        parsed = urlparse(uri)
-
-        if parsed.scheme != "velociraptor":
-            raise ValueError(f"Unknown resource scheme: {parsed.scheme}")
-
-        path = parsed.netloc + parsed.path
-        path_parts = path.strip("/").split("/")
-
-        client = get_client()
-
-        # Route to appropriate handler
-        if path_parts[0] == "clients":
-            return await _handle_clients_resource(client, path_parts[1:])
-        elif path_parts[0] == "hunts":
-            return await _handle_hunts_resource(client, path_parts[1:])
-        elif path_parts[0] == "artifacts":
-            return await _handle_artifacts_resource(client, path_parts[1:])
-        elif path_parts[0] == "server-info":
-            return await _handle_server_info_resource(client)
-        elif path_parts[0] == "deployments":
-            return await _handle_deployments_resource(path_parts[1:])
-        else:
-            raise ValueError(f"Unknown resource path: {path}")
-
-
+# Resource handler functions
 async def _handle_clients_resource(client: Any, path_parts: list[str]) -> str:
     """Handle clients resource requests."""
     if not path_parts or not path_parts[0]:
@@ -280,3 +211,72 @@ async def _handle_deployments_resource(path_parts: list[str]) -> str:
             "deployments": [],
             "note": f"Deployment features require additional packages: {str(e)}",
         }, indent=2)
+
+
+# Register resources using FastMCP @mcp.resource() decorator
+@mcp.resource("velociraptor://clients")
+async def clients_resource() -> str:
+    """Browse connected Velociraptor endpoints."""
+    client = get_client()
+    return await _handle_clients_resource(client, [])
+
+
+@mcp.resource("velociraptor://clients/{client_id}")
+async def client_detail_resource(client_id: str) -> str:
+    """Get details for a specific Velociraptor client."""
+    client = get_client()
+    return await _handle_clients_resource(client, [client_id])
+
+
+@mcp.resource("velociraptor://hunts")
+async def hunts_resource() -> str:
+    """Browse Velociraptor hunt campaigns."""
+    client = get_client()
+    return await _handle_hunts_resource(client, [])
+
+
+@mcp.resource("velociraptor://hunts/{hunt_id}")
+async def hunt_detail_resource(hunt_id: str) -> str:
+    """Get details for a specific hunt."""
+    client = get_client()
+    return await _handle_hunts_resource(client, [hunt_id])
+
+
+@mcp.resource("velociraptor://hunts/{hunt_id}/results")
+async def hunt_results_resource(hunt_id: str) -> str:
+    """Get results from a specific hunt."""
+    client = get_client()
+    return await _handle_hunts_resource(client, [hunt_id, "results"])
+
+
+@mcp.resource("velociraptor://artifacts")
+async def artifacts_resource() -> str:
+    """Browse available Velociraptor artifacts."""
+    client = get_client()
+    return await _handle_artifacts_resource(client, [])
+
+
+@mcp.resource("velociraptor://artifacts/{artifact_name}")
+async def artifact_detail_resource(artifact_name: str) -> str:
+    """Get details for a specific artifact."""
+    client = get_client()
+    return await _handle_artifacts_resource(client, [artifact_name])
+
+
+@mcp.resource("velociraptor://server-info")
+async def server_info_resource() -> str:
+    """Velociraptor server information and status."""
+    client = get_client()
+    return await _handle_server_info_resource(client)
+
+
+@mcp.resource("velociraptor://deployments")
+async def deployments_resource() -> str:
+    """List of Velociraptor deployments managed by Megaraptor MCP."""
+    return await _handle_deployments_resource([])
+
+
+@mcp.resource("velociraptor://deployments/{deployment_id}")
+async def deployment_detail_resource(deployment_id: str) -> str:
+    """Get details for a specific deployment."""
+    return await _handle_deployments_resource([deployment_id])
