@@ -7,10 +7,16 @@ Provides tools for listing, searching, and managing Velociraptor clients (endpoi
 import json
 from typing import Optional
 
+import grpc
 from mcp.types import TextContent
 
 from ..server import mcp
 from ..client import get_client
+from ..error_handling import (
+    validate_client_id,
+    validate_limit,
+    map_grpc_error,
+)
 
 
 @mcp.tool()
@@ -28,34 +34,76 @@ async def list_clients(
     Returns:
         List of clients with their ID, hostname, OS, labels, and last seen time.
     """
-    client = get_client()
+    try:
+        # Validate inputs
+        limit = validate_limit(limit)
 
-    if search:
-        vql = f"SELECT * FROM clients(search='{search}') LIMIT {limit}"
-    else:
-        vql = f"SELECT * FROM clients() LIMIT {limit}"
+        # Basic injection protection for search parameter
+        if search and (";" in search or "--" in search):
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": "Invalid search query: potentially unsafe characters detected",
+                    "hint": "Remove semicolons and SQL comment markers from search query"
+                })
+            )]
 
-    results = client.query(vql)
+        client = get_client()
 
-    # Format the results
-    formatted = []
-    for row in results:
-        client_info = {
-            "client_id": row.get("client_id", ""),
-            "hostname": row.get("os_info", {}).get("hostname", ""),
-            "os": row.get("os_info", {}).get("system", ""),
-            "release": row.get("os_info", {}).get("release", ""),
-            "labels": row.get("labels", []),
-            "last_seen_at": row.get("last_seen_at", ""),
-            "first_seen_at": row.get("first_seen_at", ""),
-            "last_ip": row.get("last_ip", ""),
-        }
-        formatted.append(client_info)
+        if search:
+            vql = f"SELECT * FROM clients(search='{search}') LIMIT {limit}"
+        else:
+            vql = f"SELECT * FROM clients() LIMIT {limit}"
 
-    return [TextContent(
-        type="text",
-        text=json.dumps(formatted, indent=2)
-    )]
+        results = client.query(vql)
+
+        # Format the results
+        formatted = []
+        for row in results:
+            client_info = {
+                "client_id": row.get("client_id", ""),
+                "hostname": row.get("os_info", {}).get("hostname", ""),
+                "os": row.get("os_info", {}).get("system", ""),
+                "release": row.get("os_info", {}).get("release", ""),
+                "labels": row.get("labels", []),
+                "last_seen_at": row.get("last_seen_at", ""),
+                "first_seen_at": row.get("first_seen_at", ""),
+                "last_ip": row.get("last_ip", ""),
+            }
+            formatted.append(client_info)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(formatted, indent=2)
+        )]
+
+    except ValueError as e:
+        # Validation errors
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Check your limit parameter value"
+            })
+        )]
+
+    except grpc.RpcError as e:
+        # gRPC errors
+        error_info = map_grpc_error(e, "listing clients")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_info, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to list clients",
+                "hint": "Check Velociraptor server connection and try again"
+            })
+        )]
 
 
 @mcp.tool()
@@ -68,22 +116,57 @@ async def get_client_info(client_id: str) -> list[TextContent]:
     Returns:
         Detailed client information including hardware, OS, IP addresses.
     """
-    client = get_client()
+    try:
+        # Validate client_id
+        client_id = validate_client_id(client_id)
 
-    vql = f"SELECT * FROM clients(client_id='{client_id}')"
-    results = client.query(vql)
+        client = get_client()
 
-    if not results:
+        vql = f"SELECT * FROM clients(client_id='{client_id}')"
+        results = client.query(vql)
+
+        if not results:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": f"Client {client_id} not found",
+                    "hint": "Use list_clients tool to find valid client IDs"
+                })
+            )]
+
+        # Return the full client info
         return [TextContent(
             type="text",
-            text=json.dumps({"error": f"Client {client_id} not found"})
+            text=json.dumps(results[0], indent=2, default=str)
         )]
 
-    # Return the full client info
-    return [TextContent(
-        type="text",
-        text=json.dumps(results[0], indent=2, default=str)
-    )]
+    except ValueError as e:
+        # Validation errors
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Provide a valid client ID starting with 'C.'"
+            })
+        )]
+
+    except grpc.RpcError as e:
+        # gRPC errors
+        error_info = map_grpc_error(e, f"fetching client {client_id}")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_info, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to get client information",
+                "hint": "Check Velociraptor server connection and try again"
+            })
+        )]
 
 
 @mcp.tool()
@@ -102,37 +185,72 @@ async def label_client(
     Returns:
         Updated client labels.
     """
-    client = get_client()
+    try:
+        # Validate client_id
+        client_id = validate_client_id(client_id)
 
-    if operation not in ("add", "remove"):
+        if operation not in ("add", "remove"):
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": "Operation must be 'add' or 'remove'",
+                    "hint": "Use operation='add' to add labels or operation='remove' to remove them"
+                })
+            )]
+
+        client = get_client()
+
+        # Build the VQL for label modification
+        labels_str = ", ".join(f"'{label}'" for label in labels)
+
+        if operation == "add":
+            vql = f"SELECT label(client_id='{client_id}', labels=[{labels_str}], op='set') FROM scope()"
+        else:
+            vql = f"SELECT label(client_id='{client_id}', labels=[{labels_str}], op='remove') FROM scope()"
+
+        results = client.query(vql)
+
+        # Get updated client info
+        info_vql = f"SELECT labels FROM clients(client_id='{client_id}')"
+        info_results = client.query(info_vql)
+
         return [TextContent(
             type="text",
-            text=json.dumps({"error": "Operation must be 'add' or 'remove'"})
+            text=json.dumps({
+                "client_id": client_id,
+                "operation": operation,
+                "labels_modified": labels,
+                "current_labels": info_results[0].get("labels", []) if info_results else [],
+            }, indent=2)
         )]
 
-    # Build the VQL for label modification
-    labels_str = ", ".join(f"'{label}'" for label in labels)
+    except ValueError as e:
+        # Validation errors
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Provide a valid client ID starting with 'C.'"
+            })
+        )]
 
-    if operation == "add":
-        vql = f"SELECT label(client_id='{client_id}', labels=[{labels_str}], op='set') FROM scope()"
-    else:
-        vql = f"SELECT label(client_id='{client_id}', labels=[{labels_str}], op='remove') FROM scope()"
+    except grpc.RpcError as e:
+        # gRPC errors
+        error_info = map_grpc_error(e, f"labeling client {client_id}")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_info, indent=2)
+        )]
 
-    results = client.query(vql)
-
-    # Get updated client info
-    info_vql = f"SELECT labels FROM clients(client_id='{client_id}')"
-    info_results = client.query(info_vql)
-
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "client_id": client_id,
-            "operation": operation,
-            "labels_modified": labels,
-            "current_labels": info_results[0].get("labels", []) if info_results else [],
-        }, indent=2)
-    )]
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to update client labels",
+                "hint": "Check Velociraptor server connection and try again"
+            })
+        )]
 
 
 @mcp.tool()
@@ -154,37 +272,69 @@ async def quarantine_client(
     Returns:
         Quarantine status of the client.
     """
-    client = get_client()
+    try:
+        # Validate client_id
+        client_id = validate_client_id(client_id)
 
-    if quarantine:
-        # Quarantine the client using the Windows.Remediation.Quarantine artifact
-        # or appropriate artifact for the client's OS
-        vql = f"""
-        SELECT collect_client(
-            client_id='{client_id}',
-            artifacts='Windows.Remediation.Quarantine',
-            env=dict(MessageBox='{message or "System quarantined by administrator"}')
-        ) FROM scope()
-        """
-    else:
-        # Unquarantine
-        vql = f"""
-        SELECT collect_client(
-            client_id='{client_id}',
-            artifacts='Windows.Remediation.Quarantine',
-            env=dict(RemovePolicy='Y')
-        ) FROM scope()
-        """
+        client = get_client()
 
-    results = client.query(vql)
+        if quarantine:
+            # Quarantine the client using the Windows.Remediation.Quarantine artifact
+            # or appropriate artifact for the client's OS
+            vql = f"""
+            SELECT collect_client(
+                client_id='{client_id}',
+                artifacts='Windows.Remediation.Quarantine',
+                env=dict(MessageBox='{message or "System quarantined by administrator"}')
+            ) FROM scope()
+            """
+        else:
+            # Unquarantine
+            vql = f"""
+            SELECT collect_client(
+                client_id='{client_id}',
+                artifacts='Windows.Remediation.Quarantine',
+                env=dict(RemovePolicy='Y')
+            ) FROM scope()
+            """
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "client_id": client_id,
-            "action": "quarantine" if quarantine else "unquarantine",
-            "status": "initiated",
-            "message": message,
-            "result": results[0] if results else None,
-        }, indent=2, default=str)
-    )]
+        results = client.query(vql)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "client_id": client_id,
+                "action": "quarantine" if quarantine else "unquarantine",
+                "status": "initiated",
+                "message": message,
+                "result": results[0] if results else None,
+            }, indent=2, default=str)
+        )]
+
+    except ValueError as e:
+        # Validation errors
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Provide a valid client ID starting with 'C.'"
+            })
+        )]
+
+    except grpc.RpcError as e:
+        # gRPC errors
+        error_info = map_grpc_error(e, f"quarantining client {client_id}")
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_info, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to quarantine client",
+                "hint": "Check Velociraptor server connection and try again"
+            })
+        )]
