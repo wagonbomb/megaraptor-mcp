@@ -18,6 +18,34 @@ from ..config import DeploymentConfig, generate_deployment_id
 from ..deployment.profiles import get_profile, PROFILES, DeploymentTarget
 
 
+def validate_deployment_id(deployment_id: str) -> str:
+    """Validate a deployment ID format.
+
+    Args:
+        deployment_id: The deployment ID to validate
+
+    Returns:
+        The validated deployment ID
+
+    Raises:
+        ValueError: If the deployment ID is invalid
+    """
+    if not deployment_id:
+        raise ValueError(
+            "Deployment ID cannot be empty. "
+            "Hint: Use list_deployments tool to find valid deployment IDs."
+        )
+
+    if not deployment_id.startswith("vr-"):
+        raise ValueError(
+            f"Invalid deployment ID format: '{deployment_id}'. "
+            "Must start with 'vr-' (e.g., 'vr-20240115-a1b2c3d4'). "
+            "Hint: Use list_deployments tool to find valid deployment IDs."
+        )
+
+    return deployment_id
+
+
 # =========================================================================
 # Server Deployment Tools (6 tools)
 # =========================================================================
@@ -131,13 +159,23 @@ async def deploy_server(
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
                 "error": str(e),
-                "deployment_type": deployment_type,
-                "profile": profile,
+                "hint": "Check your deployment parameters"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to deploy server",
+                "hint": "Check deployment configuration and try again. Ensure Docker is running for docker deployments."
             }, indent=2)
         )]
 
@@ -218,6 +256,9 @@ async def get_deployment_status(
         Current deployment status including health checks and metrics.
     """
     try:
+        # Validate deployment_id
+        deployment_id = validate_deployment_id(deployment_id)
+
         from ..deployment.deployers import DockerDeployer, BinaryDeployer
 
         # Try Docker first
@@ -251,14 +292,38 @@ async def get_deployment_status(
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Deployment not found: {deployment_id}"
+                "error": f"Deployment not found: {deployment_id}",
+                "hint": "Use list_deployments tool to see available deployments"
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Provide a valid deployment ID starting with 'vr-'"
+            }, indent=2)
+        )]
+
+    except ImportError as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to get deployment status",
+                "hint": "Check deployment ID and try again"
+            }, indent=2)
         )]
 
 
@@ -289,6 +354,9 @@ async def destroy_deployment(
         )]
 
     try:
+        # Validate deployment_id
+        deployment_id = validate_deployment_id(deployment_id)
+
         from ..deployment.deployers import DockerDeployer, BinaryDeployer
         from ..deployment.security import CertificateManager, CredentialStore
 
@@ -320,10 +388,33 @@ async def destroy_deployment(
             text=json.dumps(result.to_dict(), indent=2)
         )]
 
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": str(e),
+                "hint": "Provide a valid deployment ID starting with 'vr-'"
+            }, indent=2)
+        )]
+
+    except ImportError as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to destroy deployment",
+                "hint": "Check deployment ID and ensure deployment exists"
+            }, indent=2)
         )]
 
 
@@ -380,10 +471,23 @@ async def list_deployments(
             }, indent=2, default=str)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to list deployments",
+                "hint": "Check deployment infrastructure is available"
+            }, indent=2)
         )]
 
 
@@ -426,7 +530,8 @@ async def generate_agent_installer(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -472,10 +577,23 @@ async def generate_agent_installer(
             text=json.dumps(result.to_dict(), indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -539,10 +657,23 @@ async def create_offline_collector(
             text=json.dumps(response, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -582,7 +713,8 @@ async def generate_gpo_package(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -660,10 +792,23 @@ async def generate_gpo_package(
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -703,7 +848,8 @@ async def generate_ansible_playbook(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -750,10 +896,23 @@ async def generate_ansible_playbook(
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -795,7 +954,8 @@ async def deploy_agents_winrm(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -861,10 +1021,23 @@ async def deploy_agents_winrm(
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -908,7 +1081,8 @@ async def deploy_agents_ssh(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -974,10 +1148,23 @@ async def deploy_agents_ssh(
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1054,10 +1241,23 @@ async def check_agent_deployment(
             }, indent=2, default=str)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1091,7 +1291,8 @@ async def generate_server_config(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -1140,10 +1341,23 @@ async def generate_server_config(
             text=output
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1180,7 +1394,8 @@ async def generate_api_credentials(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -1232,10 +1447,23 @@ async def generate_api_credentials(
 {yaml.dump(api_config, default_flow_style=False)}"""
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1269,7 +1497,8 @@ async def rotate_certificates(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -1316,10 +1545,23 @@ async def rotate_certificates(
                 }, indent=2)
             )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1435,10 +1677,23 @@ async def validate_deployment(
             }, indent=2, default=str)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
 
 
@@ -1475,7 +1730,8 @@ async def export_deployment_docs(
             return [TextContent(
                 type="text",
                 text=json.dumps({
-                    "error": f"Deployment not found: {deployment_id}"
+                    "error": f"Deployment not found: {deployment_id}",
+                    "hint": "Use list_deployments tool to see available deployments"
                 }, indent=2)
             )]
 
@@ -1561,8 +1817,21 @@ For issues, see the troubleshooting guide or contact your administrator.
             }, indent=2)
         )]
 
-    except Exception as e:
+    except ImportError as e:
         return [TextContent(
             type="text",
-            text=json.dumps({"error": str(e)}, indent=2)
+            text=json.dumps({
+                "error": f"Missing dependency: {str(e)}",
+                "hint": "Install required packages with: pip install megaraptor-mcp[deployment]"
+            }, indent=2)
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Operation failed",
+                "hint": "Check deployment configuration and try again"
+            }, indent=2)
         )]
