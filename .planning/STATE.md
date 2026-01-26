@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 3 of 6 (Error Handling) - Verified ✓
-Plan: 4 of 4 complete (03-04-PLAN.md)
-Status: Phase 3 verified — all ERR-01 through ERR-07 requirements satisfied
-Last activity: 2026-01-26 — Fixed str(e) exposure gap in hunts.py (commit 2cae1cb), phase verified
+Phase: 4 of 6 (OS-Specific Artifacts) - Complete ✓
+Plan: 2 of 2 complete (04-02-PLAN.md)
+Status: Phase 4 complete — all OSART-01 through OSART-05 requirements satisfied
+Last activity: 2026-01-26 — Completed 04-02-PLAN.md (Windows artifact tests with skip guards)
 
-Progress: [█████░░░░░] 50% (3 of 6 phases complete)
+Progress: [████████░░] 67% (4 of 6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 5.5 min
-- Total execution time: 1.2 hours
+- Total plans completed: 15
+- Average duration: 5.7 min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [█████░░░░░] 50% (3 of 6 phases complete)
 | 01-test-infrastructure | 3 | 10min | 3.3min |
 | 02-smoke-tests | 6 | 30min | 5.0min |
 | 03-error-handling | 4 | 33min | 8.3min |
+| 04-os-specific-artifacts | 2 | 18min | 9.0min |
 
 **Recent Trend:**
-- Last 5 plans: 8min, 8min, 5min, 5min, 15min
-- Trend: Longer for comprehensive testing plans (15min), stable 5-8min otherwise
+- Last 5 plans: 5min, 5min, 15min, 10min, 8min
+- Trend: Stable 5-10min for standard plans, 15min for comprehensive testing
 
 *Updated after each plan completion*
 
@@ -129,6 +130,18 @@ Recent decisions affecting current work:
 - All "not found" errors enhanced with hints suggesting appropriate list_* tools
 - 75/75 smoke tests pass - error handling doesn't break normal operation
 
+**From 04-01 execution (Linux Artifact Testing):**
+- OS-specific artifact schemas validate critical fields only (avoid brittleness)
+- TargetRegistry.get_by_artifact() method for artifact-based target selection
+- Flexible field name matching supports multiple Velociraptor versions
+- Linux.Sys.Users artifact validated against schema with proper capability checks
+
+**From 04-02 execution (Windows Artifact Testing with Skip Guards):**
+- Skip guard pattern for unavailable test targets (skip_no_windows_target decorator)
+- has_windows_target() helper returns False when no Windows target available
+- Windows marker registered for test filtering (pytest -m windows)
+- Tests skip gracefully with clear messages, run automatically when target added
+
 ### Pending Todos
 
 None yet.
@@ -141,10 +154,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T04:00:00Z
-Stopped at: Phase 3 verified — gap closure complete
+Last session: 2026-01-26T18:43:12Z
+Stopped at: Completed 04-02-PLAN.md — Phase 4 complete
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Phase 3 verified. Begin Phase 4 - OS-Specific Artifacts*
+*Next step: Phase 4 complete. Begin Phase 5 - Cross-Platform Testing*
