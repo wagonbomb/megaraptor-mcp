@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 3 of 6 (Error Handling) - In Progress
-Plan: 2 of 4 complete (03-02-PLAN.md)
-Status: Executing error handling for client and artifact tools
-Last activity: 2026-01-26 — Completed 03-02-PLAN.md (Client and Artifact Tools Error Handling)
+Plan: 3 of 4 complete (03-03-PLAN.md)
+Status: Core tool error handling complete (clients, artifacts, hunts, flows, VQL)
+Last activity: 2026-01-26 — Completed 03-03-PLAN.md (Hunt, Flow, and VQL Tool Error Handling)
 
 Progress: [█████░░░░░] 50% (3 of 6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 4.8 min
+- Total plans completed: 12
+- Average duration: 4.6 min
 - Total execution time: 0.9 hours
 
 **By Phase:**
@@ -29,10 +29,10 @@ Progress: [█████░░░░░] 50% (3 of 6 phases complete)
 |-------|-------|-------|----------|
 | 01-test-infrastructure | 3 | 10min | 3.3min |
 | 02-smoke-tests | 6 | 30min | 5.0min |
-| 03-error-handling | 2 | 13min | 6.5min |
+| 03-error-handling | 3 | 18min | 6.0min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 12min, 8min, 8min, 5min
+- Last 5 plans: 12min, 8min, 8min, 5min, 5min
 - Trend: Stable at 5-8min for implementation plans
 
 *Updated after each plan completion*
@@ -113,6 +113,13 @@ Recent decisions affecting current work:
 - All error responses include 'error' and 'hint' fields for consistent user experience
 - Generic exception handlers must never expose stack traces or internal error details
 
+**From 03-03 execution (Hunt, Flow, and VQL Tool Error Handling):**
+- Validate inputs immediately at function entry using error_handling validators
+- Add contextual hints to 404 errors (e.g., "Use list_hunts() to see available hunts")
+- Pre-execution VQL syntax validation catches common mistakes (trailing semicolons, empty queries)
+- Server INVALID_ARGUMENT errors enhanced with VQL-specific hints from extract_vql_error_hint
+- Two-layer VQL validation: basic syntax before execution, detailed hints from server errors
+
 ### Pending Todos
 
 None yet.
@@ -125,10 +132,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T03:11:49Z
-Stopped at: Completed 03-02-PLAN.md (Client and Artifact Tools Error Handling)
+Last session: 2026-01-26T03:11:50Z
+Stopped at: Completed 03-03-PLAN.md (Hunt, Flow, and VQL Tool Error Handling)
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Continue with 03-03 and 03-04 to complete Phase 3 error handling*
+*Next step: Continue with 03-04 to complete Phase 3 error handling*
