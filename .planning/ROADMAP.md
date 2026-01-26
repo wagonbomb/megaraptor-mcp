@@ -143,10 +143,13 @@ Plans:
   4. Deployment rollback successfully cleans up all resources
   5. Gap analysis document identifies missing tool capabilities and improvement recommendations
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD (planned during plan-phase)
+- [ ] 06-01-PLAN.md — Docker deployment E2E validation (DEPLOY-01, DEPLOY-04)
+- [ ] 06-02-PLAN.md — Investigation workflow E2E test (DEPLOY-03)
+- [ ] 06-03-PLAN.md — Agent deployment tests with skip guards (DEPLOY-02, DEPLOY-05, DEPLOY-06)
+- [ ] 06-04-PLAN.md — Gap analysis documentation (GAP-01, GAP-02, GAP-03)
 
 ## Progress
 
@@ -160,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Error Handling | 4/4 | Complete | 2026-01-26 |
 | 4. OS-Specific Artifacts | 2/2 | Complete | 2026-01-26 |
 | 5. Output Quality | 3/3 | Complete | 2026-01-26 |
-| 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
+| 6. Deployment & Gap Analysis | 0/4 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-25*
