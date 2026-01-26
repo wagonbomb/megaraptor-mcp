@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 6 of 6 (Deployment & Gap Analysis) - In Progress
-Plan: 2 of 4 complete (06-01-PLAN.md, 06-03-PLAN.md)
-Status: Docker deployment E2E tests created (DEPLOY-01, DEPLOY-04) with graceful skip when image unavailable
-Last activity: 2026-01-26 — Completed 06-01-PLAN.md (Docker Deployment E2E Tests)
+Plan: 3 of 4 complete (06-01, 06-03, 06-04)
+Status: Gap analysis complete - tool gaps, deployment recommendations, cloud scope documented (GAP-01, GAP-02, GAP-03)
+Last activity: 2026-01-26 — Completed 06-04-PLAN.md (Gap Analysis Document)
 
-Progress: [█████████░] 91% (20 of 22 plans complete)
+Progress: [█████████░] 95% (21 of 22 plans complete)
 
 ## Performance Metrics
 
@@ -191,6 +191,14 @@ Recent decisions affecting current work:
 - Short-lived certificates (1 day) for test isolation
 - Test semantics: skip on infrastructure unavailability, fail on actual test bugs
 
+**From 06-04 execution (Gap Analysis Document):**
+- GAP_ANALYSIS.md placed in .planning/ since docs/ is gitignored
+- Workflow-based capability assessment: Triage, Collection, Analysis, Remediation
+- 4 critical tool gaps identified: timeline generation, IOC extraction, report generation, file remediation
+- 12 deployment improvement recommendations across 3 priority tiers
+- Cloud testing scoped for AWS (CLOUD-01), Azure (CLOUD-02), cross-cloud (CLOUD-03)
+- Monthly cloud budget estimate: $100 combined ($50 AWS + $50 Azure)
+
 ### Pending Todos
 
 None yet.
@@ -204,9 +212,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 06-01-PLAN.md — Docker Deployment E2E Tests
+Stopped at: Completed 06-04-PLAN.md — Gap Analysis Document
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Continue Phase 6 execution (06-02, 06-04 remaining)*
+*Next step: Complete 06-02-PLAN.md (Binary Deployment Tests) to finish Phase 6*
