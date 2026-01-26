@@ -14,6 +14,11 @@ from .base_schemas import (
     DEPLOYMENT_STATUS_SCHEMA,
     LIST_DEPLOYMENTS_SCHEMA,
 )
+from .os_artifacts import (
+    LINUX_SYS_USERS_SCHEMA,
+    WINDOWS_SYSTEM_SERVICES_SCHEMA,
+    WINDOWS_REGISTRY_USERASSIST_SCHEMA,
+)
 
 _SCHEMA_REGISTRY = {
     # Client tools
