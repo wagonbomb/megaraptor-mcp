@@ -10,8 +10,10 @@ import tempfile
 import os
 from typing import Any, AsyncIterator, Optional
 from contextlib import contextmanager
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
 from .config import VelociraptorConfig, load_config
+from .error_handling import is_retryable_grpc_error
 
 # Import Velociraptor gRPC stubs
 try:
@@ -128,18 +130,30 @@ class VelociraptorClient:
             self._channel = None
             self._stub = None
 
+    @retry(
+        retry=retry_if_exception(is_retryable_grpc_error),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
     def query(
         self,
         vql: str,
         env: Optional[dict[str, Any]] = None,
         org_id: Optional[str] = None,
+        timeout: float = 30.0,
     ) -> list[dict[str, Any]]:
         """Execute a VQL query and return results.
+
+        Automatic retry on transient failures (UNAVAILABLE, DEADLINE_EXCEEDED,
+        RESOURCE_EXHAUSTED) with exponential backoff (1s, 2s, 4s up to 10s max).
+        No retry on validation errors, authentication errors, or not found errors.
 
         Args:
             vql: The VQL query to execute
             env: Optional environment variables for the query
             org_id: Optional organization ID for multi-tenant setups
+            timeout: Query timeout in seconds (default: 30.0)
 
         Returns:
             List of result rows as dictionaries
@@ -163,7 +177,7 @@ class VelociraptorClient:
 
         # Execute the query and collect results
         results = []
-        for response in self._stub.Query(request):
+        for response in self._stub.Query(request, timeout=timeout):
             if response.Response:
                 # Parse JSON response
                 try:
@@ -178,18 +192,30 @@ class VelociraptorClient:
 
         return results
 
+    @retry(
+        retry=retry_if_exception(is_retryable_grpc_error),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
     def query_stream(
         self,
         vql: str,
         env: Optional[dict[str, Any]] = None,
         org_id: Optional[str] = None,
+        timeout: float = 30.0,
     ) -> AsyncIterator[dict[str, Any]]:
         """Execute a VQL query and stream results.
+
+        Automatic retry on transient failures (UNAVAILABLE, DEADLINE_EXCEEDED,
+        RESOURCE_EXHAUSTED) with exponential backoff (1s, 2s, 4s up to 10s max).
+        No retry on validation errors, authentication errors, or not found errors.
 
         Args:
             vql: The VQL query to execute
             env: Optional environment variables for the query
             org_id: Optional organization ID for multi-tenant setups
+            timeout: Query timeout in seconds (default: 30.0)
 
         Yields:
             Result rows as dictionaries
@@ -212,7 +238,7 @@ class VelociraptorClient:
         )
 
         # Execute the query and stream results
-        for response in self._stub.Query(request):
+        for response in self._stub.Query(request, timeout=timeout):
             if response.Response:
                 try:
                     rows = json.loads(response.Response)
