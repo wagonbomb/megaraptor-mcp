@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Test Infrastructure** - Foundation for all validation testing
 - [x] **Phase 2: Smoke Tests** - Basic tool functionality verification
 - [x] **Phase 3: Error Handling** - Failure mode and edge case validation
-- [ ] **Phase 4: OS-Specific Artifacts** - Multi-platform artifact validation
+- [x] **Phase 4: OS-Specific Artifacts** - Multi-platform artifact validation
 - [ ] **Phase 5: Output Quality** - Forensic soundness and correctness
 - [ ] **Phase 6: Deployment & Gap Analysis** - End-to-end deployment validation
 
@@ -105,8 +105,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Linux artifact testing (TargetRegistry enhancement, schemas, Linux.Sys.Users)
-- [ ] 04-02-PLAN.md — Windows artifact testing (Services, Registry.UserAssist with skip guards)
+- [x] 04-01-PLAN.md — Linux artifact testing (TargetRegistry enhancement, schemas, Linux.Sys.Users)
+- [x] 04-02-PLAN.md — Windows artifact testing (Services, Registry.UserAssist with skip guards)
 
 ### Phase 5: Output Quality
 **Goal**: All artifact collections produce forensically sound output with verifiable correctness against known-good baselines
@@ -156,7 +156,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
 | 2. Smoke Tests | 6/6 | Complete | 2026-01-25 |
 | 3. Error Handling | 4/4 | Complete | 2026-01-26 |
-| 4. OS-Specific Artifacts | 0/2 | Not started | - |
+| 4. OS-Specific Artifacts | 2/2 | Complete | 2026-01-26 |
 | 5. Output Quality | 0/TBD | Not started | - |
 | 6. Deployment & Gap Analysis | 0/TBD | Not started | - |
 

@@ -18,31 +18,31 @@ Requirements for milestone v1.0 Quality & Real-World Validation. Each maps to ro
 
 ### Smoke Tests
 
-- [ ] **SMOKE-01**: All 35 MCP tools are callable and return non-error responses
-- [ ] **SMOKE-02**: Generic.Client.Info artifact collection works against live container
-- [ ] **SMOKE-03**: Generic.System.Pslist returns valid process list structure
-- [ ] **SMOKE-04**: Basic VQL query execution completes without syntax errors
-- [ ] **SMOKE-05**: Output structure validated against JSON Schema for AI parsing
-- [ ] **SMOKE-06**: Server connectivity and authentication verified before test runs
-- [ ] **SMOKE-07**: Resource browsing (velociraptor:// URIs) returns valid data
+- [x] **SMOKE-01**: All 35 MCP tools are callable and return non-error responses
+- [x] **SMOKE-02**: Generic.Client.Info artifact collection works against live container
+- [x] **SMOKE-03**: Generic.System.Pslist returns valid process list structure
+- [x] **SMOKE-04**: Basic VQL query execution completes without syntax errors
+- [x] **SMOKE-05**: Output structure validated against JSON Schema for AI parsing
+- [x] **SMOKE-06**: Server connectivity and authentication verified before test runs
+- [x] **SMOKE-07**: Resource browsing (velociraptor:// URIs) returns valid data
 
 ### Error Handling
 
-- [ ] **ERR-01**: Network timeout errors are caught and return clear error messages
-- [ ] **ERR-02**: Malformed VQL syntax errors return actionable correction hints
-- [ ] **ERR-03**: Non-existent resource requests (clients, hunts, flows) return 404-style errors
-- [ ] **ERR-04**: Invalid parameters (negative limits, empty IDs) are validated with clear messages
-- [ ] **ERR-05**: Authentication/permission errors are handled gracefully
-- [ ] **ERR-06**: No stack traces exposed to users in error responses
-- [ ] **ERR-07**: Retry logic handles transient connection failures
+- [x] **ERR-01**: Network timeout errors are caught and return clear error messages
+- [x] **ERR-02**: Malformed VQL syntax errors return actionable correction hints
+- [x] **ERR-03**: Non-existent resource requests (clients, hunts, flows) return 404-style errors
+- [x] **ERR-04**: Invalid parameters (negative limits, empty IDs) are validated with clear messages
+- [x] **ERR-05**: Authentication/permission errors are handled gracefully
+- [x] **ERR-06**: No stack traces exposed to users in error responses
+- [x] **ERR-07**: Retry logic handles transient connection failures
 
 ### OS-Specific Artifacts
 
-- [ ] **OSART-01**: Linux.Sys.Users artifact collection and validation works
-- [ ] **OSART-02**: Windows.System.Services artifact collection works (Windows target required)
-- [ ] **OSART-03**: Windows registry artifact validation (UserAssist or similar)
-- [ ] **OSART-04**: Multi-OS target support in TargetRegistry with capability filtering
-- [ ] **OSART-05**: OS-specific validation schemas for complex artifact types
+- [x] **OSART-01**: Linux.Sys.Users artifact collection and validation works
+- [x] **OSART-02**: Windows.System.Services artifact collection works (Windows target required)
+- [x] **OSART-03**: Windows registry artifact validation (UserAssist or similar)
+- [x] **OSART-04**: Multi-OS target support in TargetRegistry with capability filtering
+- [x] **OSART-05**: OS-specific validation schemas for complex artifact types
 
 ### Output Quality
 
@@ -116,25 +116,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 1 | Complete |
 | INFRA-06 | Phase 1 | Complete |
-| SMOKE-01 | Phase 2 | Pending |
-| SMOKE-02 | Phase 2 | Pending |
-| SMOKE-03 | Phase 2 | Pending |
-| SMOKE-04 | Phase 2 | Pending |
-| SMOKE-05 | Phase 2 | Pending |
-| SMOKE-06 | Phase 2 | Pending |
-| SMOKE-07 | Phase 2 | Pending |
-| ERR-01 | Phase 3 | Pending |
-| ERR-02 | Phase 3 | Pending |
-| ERR-03 | Phase 3 | Pending |
-| ERR-04 | Phase 3 | Pending |
-| ERR-05 | Phase 3 | Pending |
-| ERR-06 | Phase 3 | Pending |
-| ERR-07 | Phase 3 | Pending |
-| OSART-01 | Phase 4 | Pending |
-| OSART-02 | Phase 4 | Pending |
-| OSART-03 | Phase 4 | Pending |
-| OSART-04 | Phase 4 | Pending |
-| OSART-05 | Phase 4 | Pending |
+| SMOKE-01 | Phase 2 | Complete |
+| SMOKE-02 | Phase 2 | Complete |
+| SMOKE-03 | Phase 2 | Complete |
+| SMOKE-04 | Phase 2 | Complete |
+| SMOKE-05 | Phase 2 | Complete |
+| SMOKE-06 | Phase 2 | Complete |
+| SMOKE-07 | Phase 2 | Complete |
+| ERR-01 | Phase 3 | Complete |
+| ERR-02 | Phase 3 | Complete |
+| ERR-03 | Phase 3 | Complete |
+| ERR-04 | Phase 3 | Complete |
+| ERR-05 | Phase 3 | Complete |
+| ERR-06 | Phase 3 | Complete |
+| ERR-07 | Phase 3 | Complete |
+| OSART-01 | Phase 4 | Complete |
+| OSART-02 | Phase 4 | Complete |
+| OSART-03 | Phase 4 | Complete |
+| OSART-04 | Phase 4 | Complete |
+| OSART-05 | Phase 4 | Complete |
 | QUAL-01 | Phase 5 | Pending |
 | QUAL-02 | Phase 5 | Pending |
 | QUAL-03 | Phase 5 | Pending |
