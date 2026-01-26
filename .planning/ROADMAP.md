@@ -13,7 +13,7 @@ This roadmap validates all 35 MCP tools against real Velociraptor deployments th
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Test Infrastructure** - Foundation for all validation testing
-- [ ] **Phase 2: Smoke Tests** - Basic tool functionality verification
+- [x] **Phase 2: Smoke Tests** - Basic tool functionality verification
 - [ ] **Phase 3: Error Handling** - Failure mode and edge case validation
 - [ ] **Phase 4: OS-Specific Artifacts** - Multi-platform artifact validation
 - [ ] **Phase 5: Output Quality** - Forensic soundness and correctness
@@ -63,8 +63,8 @@ Plans:
 - [x] 02-02-PLAN.md — Parametrized smoke tests for all 35 MCP tools
 - [x] 02-03-PLAN.md — Artifact collection smoke tests (Generic.Client.Info, Generic.System.Pslist)
 - [x] 02-04-PLAN.md — VQL execution and resource URI smoke tests
-- [ ] 02-05-PLAN.md — [GAP CLOSURE] Migrate to FastMCP for SDK 1.25.0 compatibility
-- [ ] 02-06-PLAN.md — [GAP CLOSURE] Fix artifact collection after FastMCP migration
+- [x] 02-05-PLAN.md — [GAP CLOSURE] Migrate to FastMCP for SDK 1.25.0 compatibility
+- [x] 02-06-PLAN.md — [GAP CLOSURE] Fix artifact collection after FastMCP migration
 
 ### Phase 3: Error Handling
 **Goal**: All MCP tools handle failure scenarios gracefully with actionable error messages and no exposed stack traces
@@ -150,7 +150,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Test Infrastructure | 3/3 | Complete | 2026-01-25 |
-| 2. Smoke Tests | 4/6 | Gap Closure | - |
+| 2. Smoke Tests | 6/6 | Complete | 2026-01-25 |
 | 3. Error Handling | 0/TBD | Not started | - |
 | 4. OS-Specific Artifacts | 0/TBD | Not started | - |
 | 5. Output Quality | 0/TBD | Not started | - |
