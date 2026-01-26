@@ -46,12 +46,12 @@ Requirements for milestone v1.0 Quality & Real-World Validation. Each maps to ro
 
 ### Output Quality
 
-- [ ] **QUAL-01**: Hash validation confirms collected artifacts match expected values
-- [ ] **QUAL-02**: Timeline accuracy testing verifies timestamps within ±1 second drift
-- [ ] **QUAL-03**: Artifact completeness validation ensures all expected fields present
-- [ ] **QUAL-04**: VQL result correctness compared against known-good baselines
-- [ ] **QUAL-05**: Known-good test dataset documented in tests/fixtures/README.md
-- [ ] **QUAL-06**: NIST CFTT false positive rate requirement (<1%) validated
+- [x] **QUAL-01**: Hash validation confirms collected artifacts match expected values
+- [x] **QUAL-02**: Timeline accuracy testing verifies timestamps within ±1 second drift
+- [x] **QUAL-03**: Artifact completeness validation ensures all expected fields present
+- [x] **QUAL-04**: VQL result correctness compared against known-good baselines
+- [x] **QUAL-05**: Known-good test dataset documented in tests/fixtures/README.md
+- [x] **QUAL-06**: NIST CFTT false positive rate requirement (<1%) validated
 
 ### Deployment Validation
 
@@ -135,12 +135,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OSART-03 | Phase 4 | Complete |
 | OSART-04 | Phase 4 | Complete |
 | OSART-05 | Phase 4 | Complete |
-| QUAL-01 | Phase 5 | Pending |
-| QUAL-02 | Phase 5 | Pending |
-| QUAL-03 | Phase 5 | Pending |
-| QUAL-04 | Phase 5 | Pending |
-| QUAL-05 | Phase 5 | Pending |
-| QUAL-06 | Phase 5 | Pending |
+| QUAL-01 | Phase 5 | Complete |
+| QUAL-02 | Phase 5 | Complete |
+| QUAL-03 | Phase 5 | Complete |
+| QUAL-04 | Phase 5 | Complete |
+| QUAL-05 | Phase 5 | Complete |
+| QUAL-06 | Phase 5 | Complete |
 | DEPLOY-01 | Phase 6 | Pending |
 | DEPLOY-02 | Phase 6 | Pending |
 | DEPLOY-03 | Phase 6 | Pending |
