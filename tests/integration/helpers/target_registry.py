@@ -61,6 +61,7 @@ class TargetRegistry:
         "windows_eventlog",
         "windows_filesystem",
         "windows_processes",
+        "windows_services",
     ]
 
     DARWIN_CAPABILITIES = [
@@ -199,6 +200,34 @@ class TargetRegistry:
             List of TestTargets with capability
         """
         return [t for t in self.targets if t.has_capability(capability)]
+
+    def get_by_artifact(self, artifact_name: str) -> Optional[TestTarget]:
+        """Get first target that supports a specific artifact.
+
+        Maps artifact names to OS capabilities:
+        - Linux.* -> Linux target
+        - Windows.Registry.* -> Windows target with registry capability
+        - Windows.* -> Windows target
+        - Generic.* -> Any target
+
+        Args:
+            artifact_name: Full artifact name (e.g., 'Linux.Sys.Users')
+
+        Returns:
+            TestTarget that supports the artifact, or None
+        """
+        if artifact_name.startswith("Linux."):
+            return self.get_by_os("linux")
+        elif artifact_name.startswith("Windows.Registry."):
+            return self.get_by_capability("windows_registry")
+        elif artifact_name.startswith("Windows."):
+            return self.get_by_os("windows")
+        elif artifact_name.startswith("Generic."):
+            # Generic artifacts work on any OS
+            return self.targets[0] if self.targets else None
+        else:
+            # Unknown prefix - try any target
+            return self.targets[0] if self.targets else None
 
     def _infer_capabilities(self, os_type: str) -> List[str]:
         """Infer capabilities based on OS type.
