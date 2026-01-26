@@ -156,23 +156,17 @@ async def list_hunts(
     Returns:
         List of hunts with their status and statistics.
     """
-    # Input validation
-    limit_validation = validate_limit(limit)
-    if limit_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(limit_validation)
-        )]
-
-    if state and state.upper() not in ['RUNNING', 'PAUSED', 'STOPPED', 'COMPLETED']:
-        return [TextContent(
-            type="text",
-            text=json.dumps({
-                "error": f"Invalid state '{state}'. Must be one of: RUNNING, PAUSED, STOPPED, COMPLETED"
-            })
-        )]
-
     try:
+        # Input validation
+        limit = validate_limit(limit)
+
+        if state and state.upper() not in ['RUNNING', 'PAUSED', 'STOPPED', 'COMPLETED']:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": f"Invalid state '{state}'. Must be one of: RUNNING, PAUSED, STOPPED, COMPLETED"
+                })
+            )]
         client = get_client()
 
         vql = f"SELECT * FROM hunts() LIMIT {limit}"
@@ -212,11 +206,24 @@ async def list_hunts(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error listing hunts: {str(e)}"
+                "error": str(e),
+                "hint": "Check your limit parameter value"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to list hunts",
+                "hint": "Check Velociraptor server connection and try again"
             })
         )]
 
@@ -237,22 +244,10 @@ async def get_hunt_results(
     Returns:
         Hunt results data from all clients.
     """
-    # Input validation
-    hunt_id_validation = validate_hunt_id(hunt_id)
-    if hunt_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(hunt_id_validation)
-        )]
-
-    limit_validation = validate_limit(limit)
-    if limit_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(limit_validation)
-        )]
-
     try:
+        # Input validation
+        hunt_id = validate_hunt_id(hunt_id)
+        limit = validate_limit(limit)
         client = get_client()
 
         # Build the VQL query
@@ -282,11 +277,24 @@ async def get_hunt_results(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error getting hunt results: {str(e)}"
+                "error": str(e),
+                "hint": "Provide a valid hunt ID starting with 'H.'"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to get hunt results",
+                "hint": "Check hunt ID and try again"
             })
         )]
 
@@ -305,30 +313,25 @@ async def modify_hunt(
     Returns:
         Updated hunt status.
     """
-    # Input validation
-    hunt_id_validation = validate_hunt_id(hunt_id)
-    if hunt_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(hunt_id_validation)
-        )]
-
-    action_map = {
-        "start": "StartHuntRequest",
-        "pause": "PauseHuntRequest",
-        "stop": "StopHuntRequest",
-        "archive": "ArchiveHuntRequest",
-    }
-
-    if action not in action_map:
-        return [TextContent(
-            type="text",
-            text=json.dumps({
-                "error": f"Invalid action '{action}'. Must be one of: start, pause, stop, archive"
-            })
-        )]
-
     try:
+        # Input validation
+        hunt_id = validate_hunt_id(hunt_id)
+
+        action_map = {
+            "start": "StartHuntRequest",
+            "pause": "PauseHuntRequest",
+            "stop": "StopHuntRequest",
+            "archive": "ArchiveHuntRequest",
+        }
+
+        if action not in action_map:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": f"Invalid action '{action}'. Must be one of: start, pause, stop, archive"
+                })
+            )]
+
         client = get_client()
 
         # Use the hunt() function to modify the hunt
@@ -362,10 +365,23 @@ async def modify_hunt(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error modifying hunt: {str(e)}"
+                "error": str(e),
+                "hint": "Provide a valid hunt ID starting with 'H.'"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to modify hunt",
+                "hint": "Check hunt ID and action parameter"
             })
         )]
