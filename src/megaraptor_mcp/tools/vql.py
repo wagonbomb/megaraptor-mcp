@@ -48,36 +48,23 @@ async def run_vql(
     Returns:
         Query results as JSON.
     """
-    # Input validation
-    if not query or not query.strip():
-        return [TextContent(
-            type="text",
-            text=json.dumps({
-                "error": "query parameter is required and cannot be empty"
-            })
-        )]
-
-    limit_validation = validate_limit(max_rows)
-    if limit_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(limit_validation)
-        )]
-
-    # Pre-execution syntax validation
-    syntax_validation = validate_vql_syntax_basics(query)
-    if syntax_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(syntax_validation)
-        )]
-
-    # Add LIMIT if not already present and query doesn't have one
-    query_upper = query.upper()
-    if "LIMIT" not in query_upper:
-        query = f"{query.rstrip(';')} LIMIT {max_rows}"
-
     try:
+        # Input validation
+        if not query or not query.strip():
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": "query parameter is required and cannot be empty"
+                })
+            )]
+
+        max_rows = validate_limit(max_rows)
+        query = validate_vql_syntax_basics(query)
+
+        # Add LIMIT if not already present and query doesn't have one
+        query_upper = query.upper()
+        if "LIMIT" not in query_upper:
+            query = f"{query.rstrip(';')} LIMIT {max_rows}"
         client = get_client()
         results = client.query(query, env=env, org_id=org_id)
 
@@ -106,12 +93,23 @@ async def run_vql(
             text=json.dumps(error_response)
         )]
 
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error executing VQL query: {str(e)}",
-                "query": query,
+                "error": str(e),
+                "hint": "Check VQL syntax and max_rows parameter"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to execute VQL query",
+                "hint": "Check VQL syntax and Velociraptor server connection"
             })
         )]
 

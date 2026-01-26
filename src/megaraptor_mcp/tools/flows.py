@@ -34,22 +34,10 @@ async def list_flows(
     Returns:
         List of flows with their status and artifacts.
     """
-    # Input validation
-    client_id_validation = validate_client_id(client_id)
-    if client_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(client_id_validation)
-        )]
-
-    limit_validation = validate_limit(limit)
-    if limit_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(limit_validation)
-        )]
-
     try:
+        # Input validation
+        client_id = validate_client_id(client_id)
+        limit = validate_limit(limit)
         client = get_client()
 
         vql = f"SELECT * FROM flows(client_id='{client_id}') LIMIT {limit}"
@@ -89,11 +77,24 @@ async def list_flows(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error listing flows: {str(e)}"
+                "error": str(e),
+                "hint": "Provide a valid client ID starting with 'C.'"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to list flows",
+                "hint": "Check client ID and Velociraptor server connection"
             })
         )]
 
@@ -116,29 +117,11 @@ async def get_flow_results(
     Returns:
         Collection results data.
     """
-    # Input validation
-    client_id_validation = validate_client_id(client_id)
-    if client_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(client_id_validation)
-        )]
-
-    flow_id_validation = validate_flow_id(flow_id)
-    if flow_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(flow_id_validation)
-        )]
-
-    limit_validation = validate_limit(limit)
-    if limit_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(limit_validation)
-        )]
-
     try:
+        # Input validation
+        client_id = validate_client_id(client_id)
+        flow_id = validate_flow_id(flow_id)
+        limit = validate_limit(limit)
         client = get_client()
 
         # Build the VQL query
@@ -180,11 +163,24 @@ async def get_flow_results(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error getting flow results: {str(e)}"
+                "error": str(e),
+                "hint": "Provide valid client ID (C.*) and flow ID (F.*)"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to get flow results",
+                "hint": "Check IDs and Velociraptor server connection"
             })
         )]
 
@@ -203,22 +199,10 @@ async def get_flow_status(
     Returns:
         Flow status including state, progress, and any errors.
     """
-    # Input validation
-    client_id_validation = validate_client_id(client_id)
-    if client_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(client_id_validation)
-        )]
-
-    flow_id_validation = validate_flow_id(flow_id)
-    if flow_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(flow_id_validation)
-        )]
-
     try:
+        # Input validation
+        client_id = validate_client_id(client_id)
+        flow_id = validate_flow_id(flow_id)
         client = get_client()
 
         vql = f"SELECT * FROM flows(client_id='{client_id}', flow_id='{flow_id}')"
@@ -267,11 +251,23 @@ async def get_flow_status(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error getting flow status: {str(e)}"
+                "error": str(e),
+                "hint": "Provide valid client ID (C.*) and flow ID (F.*)"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to get flow status",
+                "hint": "Check IDs and Velociraptor server connection"
             })
         )]
 
@@ -290,22 +286,10 @@ async def cancel_flow(
     Returns:
         Cancellation status.
     """
-    # Input validation
-    client_id_validation = validate_client_id(client_id)
-    if client_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(client_id_validation)
-        )]
-
-    flow_id_validation = validate_flow_id(flow_id)
-    if flow_id_validation:
-        return [TextContent(
-            type="text",
-            text=json.dumps(flow_id_validation)
-        )]
-
     try:
+        # Input validation
+        client_id = validate_client_id(client_id)
+        flow_id = validate_flow_id(flow_id)
         client = get_client()
 
         vql = f"SELECT cancel_flow(client_id='{client_id}', flow_id='{flow_id}') FROM scope()"
@@ -330,10 +314,22 @@ async def cancel_flow(
             type="text",
             text=json.dumps(error_response)
         )]
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Unexpected error cancelling flow: {str(e)}"
+                "error": str(e),
+                "hint": "Provide valid client ID (C.*) and flow ID (F.*)"
+            })
+        )]
+
+    except Exception:
+        # Generic errors - don't expose internals
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": "Failed to cancel flow",
+                "hint": "Check IDs and Velociraptor server connection"
             })
         )]
