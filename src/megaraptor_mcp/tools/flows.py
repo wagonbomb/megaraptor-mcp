@@ -4,6 +4,7 @@ Flow tools for Velociraptor MCP.
 Provides tools for tracking and managing Velociraptor collection flows.
 """
 
+import grpc
 import json
 from typing import Optional
 
@@ -11,6 +12,12 @@ from mcp.types import TextContent
 
 from ..server import mcp
 from ..client import get_client
+from ..error_handling import (
+    validate_client_id,
+    validate_flow_id,
+    validate_limit,
+    map_grpc_error,
+)
 
 
 @mcp.tool()
@@ -27,35 +34,68 @@ async def list_flows(
     Returns:
         List of flows with their status and artifacts.
     """
-    client = get_client()
+    # Input validation
+    client_id_validation = validate_client_id(client_id)
+    if client_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(client_id_validation)
+        )]
 
-    vql = f"SELECT * FROM flows(client_id='{client_id}') LIMIT {limit}"
-    results = client.query(vql)
+    limit_validation = validate_limit(limit)
+    if limit_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(limit_validation)
+        )]
 
-    # Format the results
-    formatted = []
-    for row in results:
-        flow = {
-            "flow_id": row.get("session_id", ""),
-            "state": row.get("state", ""),
-            "artifacts": row.get("artifacts_with_results", []),
-            "request": {
-                "artifacts": row.get("request", {}).get("artifacts", []),
-                "creator": row.get("request", {}).get("creator", ""),
-            },
-            "create_time": row.get("create_time", ""),
-            "start_time": row.get("start_time", ""),
-            "active_time": row.get("active_time", ""),
-            "total_uploaded_bytes": row.get("total_uploaded_bytes", 0),
-            "total_collected_rows": row.get("total_collected_rows", 0),
-            "total_logs": row.get("total_logs", 0),
-        }
-        formatted.append(flow)
+    try:
+        client = get_client()
 
-    return [TextContent(
-        type="text",
-        text=json.dumps(formatted, indent=2, default=str)
-    )]
+        vql = f"SELECT * FROM flows(client_id='{client_id}') LIMIT {limit}"
+        results = client.query(vql)
+
+        # Format the results
+        formatted = []
+        for row in results:
+            flow = {
+                "flow_id": row.get("session_id", ""),
+                "state": row.get("state", ""),
+                "artifacts": row.get("artifacts_with_results", []),
+                "request": {
+                    "artifacts": row.get("request", {}).get("artifacts", []),
+                    "creator": row.get("request", {}).get("creator", ""),
+                },
+                "create_time": row.get("create_time", ""),
+                "start_time": row.get("start_time", ""),
+                "active_time": row.get("active_time", ""),
+                "total_uploaded_bytes": row.get("total_uploaded_bytes", 0),
+                "total_collected_rows": row.get("total_collected_rows", 0),
+                "total_logs": row.get("total_logs", 0),
+            }
+            formatted.append(flow)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(formatted, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"listing flows for {client_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Client {client_id} may not exist. Use list_clients() to see available clients."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error listing flows: {str(e)}"
+            })
+        )]
 
 
 @mcp.tool()
@@ -76,37 +116,77 @@ async def get_flow_results(
     Returns:
         Collection results data.
     """
-    client = get_client()
+    # Input validation
+    client_id_validation = validate_client_id(client_id)
+    if client_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(client_id_validation)
+        )]
 
-    # Build the VQL query
-    if artifact:
-        vql = f"""
-        SELECT * FROM source(
-            client_id='{client_id}',
-            flow_id='{flow_id}',
-            artifact='{artifact}'
-        ) LIMIT {limit}
-        """
-    else:
-        vql = f"""
-        SELECT * FROM source(
-            client_id='{client_id}',
-            flow_id='{flow_id}'
-        ) LIMIT {limit}
-        """
+    flow_id_validation = validate_flow_id(flow_id)
+    if flow_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(flow_id_validation)
+        )]
 
-    results = client.query(vql)
+    limit_validation = validate_limit(limit)
+    if limit_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(limit_validation)
+        )]
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "client_id": client_id,
-            "flow_id": flow_id,
-            "artifact": artifact,
-            "result_count": len(results),
-            "results": results,
-        }, indent=2, default=str)
-    )]
+    try:
+        client = get_client()
+
+        # Build the VQL query
+        if artifact:
+            vql = f"""
+            SELECT * FROM source(
+                client_id='{client_id}',
+                flow_id='{flow_id}',
+                artifact='{artifact}'
+            ) LIMIT {limit}
+            """
+        else:
+            vql = f"""
+            SELECT * FROM source(
+                client_id='{client_id}',
+                flow_id='{flow_id}'
+            ) LIMIT {limit}
+            """
+
+        results = client.query(vql)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "client_id": client_id,
+                "flow_id": flow_id,
+                "artifact": artifact,
+                "result_count": len(results),
+                "results": results,
+            }, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"flow results for {flow_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Flow {flow_id} may not exist for client {client_id}. Use list_flows(client_id='{client_id}') to see available flows."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error getting flow results: {str(e)}"
+            })
+        )]
 
 
 @mcp.tool()
@@ -123,43 +203,77 @@ async def get_flow_status(
     Returns:
         Flow status including state, progress, and any errors.
     """
-    client = get_client()
+    # Input validation
+    client_id_validation = validate_client_id(client_id)
+    if client_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(client_id_validation)
+        )]
 
-    vql = f"SELECT * FROM flows(client_id='{client_id}', flow_id='{flow_id}')"
-    results = client.query(vql)
+    flow_id_validation = validate_flow_id(flow_id)
+    if flow_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(flow_id_validation)
+        )]
 
-    if not results:
+    try:
+        client = get_client()
+
+        vql = f"SELECT * FROM flows(client_id='{client_id}', flow_id='{flow_id}')"
+        results = client.query(vql)
+
+        if not results:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": f"Flow {flow_id} not found for client {client_id}",
+                    "hint": f"Use list_flows(client_id='{client_id}') to see available flows."
+                })
+            )]
+
+        flow = results[0]
+
+        # Extract detailed status
+        status = {
+            "client_id": client_id,
+            "flow_id": flow_id,
+            "state": flow.get("state", ""),
+            "artifacts_requested": flow.get("request", {}).get("artifacts", []),
+            "artifacts_with_results": flow.get("artifacts_with_results", []),
+            "create_time": flow.get("create_time", ""),
+            "start_time": flow.get("start_time", ""),
+            "active_time": flow.get("active_time", ""),
+            "execution_duration": flow.get("execution_duration", 0),
+            "total_uploaded_bytes": flow.get("total_uploaded_bytes", 0),
+            "total_collected_rows": flow.get("total_collected_rows", 0),
+            "outstanding_requests": flow.get("outstanding_requests", 0),
+            "backtrace": flow.get("backtrace", ""),
+            "status": flow.get("status", ""),
+        }
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(status, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"flow status for {flow_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Flow {flow_id} may not exist for client {client_id}. Use list_flows(client_id='{client_id}') to see available flows."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
         return [TextContent(
             type="text",
             text=json.dumps({
-                "error": f"Flow {flow_id} not found for client {client_id}"
+                "error": f"Unexpected error getting flow status: {str(e)}"
             })
         )]
-
-    flow = results[0]
-
-    # Extract detailed status
-    status = {
-        "client_id": client_id,
-        "flow_id": flow_id,
-        "state": flow.get("state", ""),
-        "artifacts_requested": flow.get("request", {}).get("artifacts", []),
-        "artifacts_with_results": flow.get("artifacts_with_results", []),
-        "create_time": flow.get("create_time", ""),
-        "start_time": flow.get("start_time", ""),
-        "active_time": flow.get("active_time", ""),
-        "execution_duration": flow.get("execution_duration", 0),
-        "total_uploaded_bytes": flow.get("total_uploaded_bytes", 0),
-        "total_collected_rows": flow.get("total_collected_rows", 0),
-        "outstanding_requests": flow.get("outstanding_requests", 0),
-        "backtrace": flow.get("backtrace", ""),
-        "status": flow.get("status", ""),
-    }
-
-    return [TextContent(
-        type="text",
-        text=json.dumps(status, indent=2, default=str)
-    )]
 
 
 @mcp.tool()
@@ -176,17 +290,50 @@ async def cancel_flow(
     Returns:
         Cancellation status.
     """
-    client = get_client()
+    # Input validation
+    client_id_validation = validate_client_id(client_id)
+    if client_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(client_id_validation)
+        )]
 
-    vql = f"SELECT cancel_flow(client_id='{client_id}', flow_id='{flow_id}') FROM scope()"
-    results = client.query(vql)
+    flow_id_validation = validate_flow_id(flow_id)
+    if flow_id_validation:
+        return [TextContent(
+            type="text",
+            text=json.dumps(flow_id_validation)
+        )]
 
-    return [TextContent(
-        type="text",
-        text=json.dumps({
-            "client_id": client_id,
-            "flow_id": flow_id,
-            "action": "cancelled",
-            "result": results[0] if results else None,
-        }, indent=2, default=str)
-    )]
+    try:
+        client = get_client()
+
+        vql = f"SELECT cancel_flow(client_id='{client_id}', flow_id='{flow_id}') FROM scope()"
+        results = client.query(vql)
+
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "client_id": client_id,
+                "flow_id": flow_id,
+                "action": "cancelled",
+                "result": results[0] if results else None,
+            }, indent=2, default=str)
+        )]
+
+    except grpc.RpcError as e:
+        error_response = map_grpc_error(e, f"cancelling flow {flow_id}")
+        # Check if it's a not-found error
+        if "NOT_FOUND" in error_response.get("grpc_status", ""):
+            error_response["hint"] = f"Flow {flow_id} may not exist for client {client_id}. Use list_flows(client_id='{client_id}') to see available flows."
+        return [TextContent(
+            type="text",
+            text=json.dumps(error_response)
+        )]
+    except Exception as e:
+        return [TextContent(
+            type="text",
+            text=json.dumps({
+                "error": f"Unexpected error cancelling flow: {str(e)}"
+            })
+        )]
