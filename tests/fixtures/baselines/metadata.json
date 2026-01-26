@@ -2,6 +2,12 @@
   "version": "1.0",
   "created": "2026-01-26",
   "description": "Known-good baselines for forensic validation testing",
+  "nist_cftt": {
+    "standard": "NIST Computer Forensics Tool Testing (CFTT)",
+    "requirement": "False positive rate < 1%",
+    "applicability": "VQL is deterministic - target 0% for standard queries",
+    "notes": "False positive definitions are artifact-specific. For deterministic VQL, any false positive indicates a bug."
+  },
   "baselines": {
     "Linux.Sys.Users": {
       "filename": "linux_sys_users.json",
@@ -13,6 +19,15 @@
         "collection_method": "collect_client with Linux.Sys.Users artifact"
       },
       "critical_fields": ["User", "Uid", "Gid"],
+      "false_positive_definition": {
+        "description": "User returned that does not exist in /etc/passwd",
+        "examples": [
+          "User 'ghost' returned but not in /etc/passwd",
+          "Duplicate user entries for same UID"
+        ],
+        "target_rate": "<1%",
+        "rationale": "VQL is deterministic - false positives indicate VQL bug or parsing error"
+      },
       "notes": "Initial baseline - hash to be populated after first collection"
     },
     "Generic.Client.Info": {
@@ -25,6 +40,16 @@
         "collection_method": "collect_client with Generic.Client.Info artifact"
       },
       "critical_fields": ["Hostname", "OS"],
+      "false_positive_definition": {
+        "description": "Client metadata returned that does not match actual client",
+        "examples": [
+          "Wrong hostname returned",
+          "Incorrect OS reported",
+          "Mismatched client_id"
+        ],
+        "target_rate": "<1%",
+        "rationale": "VQL queries system APIs directly - false positives indicate API or parsing issues"
+      },
       "notes": "Initial baseline - hash to be populated after first collection"
     }
   }
