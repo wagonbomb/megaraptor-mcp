@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 6 of 6 (Deployment & Gap Analysis) - In Progress
-Plan: 3 of 4 complete (06-01, 06-03, 06-04)
-Status: Gap analysis complete - tool gaps, deployment recommendations, cloud scope documented (GAP-01, GAP-02, GAP-03)
-Last activity: 2026-01-26 — Completed 06-04-PLAN.md (Gap Analysis Document)
+Phase: 6 of 6 (Deployment & Gap Analysis) - Complete
+Plan: 4 of 4 complete (06-01, 06-02, 06-03, 06-04)
+Status: All deployment tests complete - Docker E2E, investigation workflow, agent deployment, gap analysis
+Last activity: 2026-01-26 — Completed 06-02-PLAN.md (Investigation Workflow E2E)
 
-Progress: [█████████░] 95% (21 of 22 plans complete)
+Progress: [██████████] 100% (22 of 22 plans complete)
 
 ## Performance Metrics
 
@@ -199,6 +199,20 @@ Recent decisions affecting current work:
 - Cloud testing scoped for AWS (CLOUD-01), Azure (CLOUD-02), cross-cloud (CLOUD-03)
 - Monthly cloud budget estimate: $100 combined ($50 AWS + $50 Azure)
 
+**From 06-02 execution (Investigation Workflow E2E):**
+- Use clients() VQL for triage instead of pslist() (server-side vs client-side)
+- Collect both Generic.Client.Info and Linux.Sys.Pslist for comprehensive workflow
+- Three-phase workflow pattern: triage (VQL) -> collect (artifacts) -> analyze (results)
+- Flexible field matching for process list: Pid, PID, Name, name, CommandLine, etc.
+- Multi-artifact collection in single flow for efficiency
+
+**Phase 6 Complete (Deployment & Gap Analysis):**
+- DEPLOY-01: Docker E2E deployment lifecycle validated
+- DEPLOY-02: Agent deployment tests with SSH/WinRM skip guards
+- DEPLOY-03: Full investigation workflow (triage -> collect -> analyze) validated
+- GAP-01, GAP-02, GAP-03: Tool gaps, deployment recommendations, cloud scope documented
+- All 4 plans complete, all deployment requirements satisfied
+
 ### Pending Todos
 
 None yet.
@@ -212,9 +226,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 06-04-PLAN.md — Gap Analysis Document
+Stopped at: Completed 06-02-PLAN.md — Investigation Workflow E2E
 Resume file: None
 
 ---
 *State initialized: 2026-01-25*
-*Next step: Complete 06-02-PLAN.md (Binary Deployment Tests) to finish Phase 6*
+*Phase 6 complete. All 22 plans executed. Project complete.*
